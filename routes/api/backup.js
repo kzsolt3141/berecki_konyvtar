@@ -12,11 +12,11 @@ router.get('/download', async (req, res) => {
   }
 
   const projectRoot = path.join(__dirname, '..', '..');
-  const dbPath = path.join(projectRoot, 'data', 'app.db');
+  const dataPath = path.join(projectRoot, 'data');
   const uploadsPath = path.join(projectRoot, 'public', 'uploads');
 
-  if (!fs.existsSync(dbPath)) {
-    res.status(404).json({ message: 'Database file not found.' });
+  if (!fs.existsSync(dataPath)) {
+    res.status(404).json({ message: 'Data folder not found.' });
     return;
   }
 
@@ -40,7 +40,7 @@ router.get('/download', async (req, res) => {
 
   archive.pipe(res);
 
-  archive.file(dbPath, { name: 'app.db' });
+  archive.directory(dataPath, 'data');
 
   if (fs.existsSync(uploadsPath)) {
     archive.directory(uploadsPath, 'uploads');
