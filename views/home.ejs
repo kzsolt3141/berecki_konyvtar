@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="page-home">
+  <header class="home-header">
+    <div class="home-user">
+      <span class="home-user-name"><%= name %></span>
+      <a class="home-action-link home-action-link-header" href="/home">Home</a>
+      <a class="home-action-link home-action-link-header" href="/reports">Reports</a>
+      <% if (isAdmin) { %>
+      <button type="button" id="backup-btn" class="home-action-link home-action-link-header">Backup</button>
+      <a class="home-action-link home-action-link-header" href="/books/new">Register a Book</a>
+      <% } %>
+      <a href="/profile" class="home-avatar-link" aria-label="Edit profile">
+        <img
+          class="home-user-avatar"
+          src="<%= imagePath || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23f2effa'/%3E%3Ccircle cx='60' cy='46' r='22' fill='%23c6b5e9'/%3E%3Cpath d='M24 102c6-19 22-30 36-30s30 11 36 30' fill='%23c6b5e9'/%3E%3C/svg%3E" %>"
+          alt="<%= name %>'s profile picture"
+        />
+      </a>
+      <button id="logout-btn" class="btn-logout" title="Log out">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="home-main">
+    <% if (isAdmin) { %>
+    <div class="home-books-content home-admin-content">
+      <div class="home-admin-topbar">
+        <h1>Welcome, <%= name %>!</h1>
+      </div>
+
+      <section class="home-section-block">
+        <h2 class="home-books-title">Books</h2>
+
+        <form class="books-search-form" method="GET" action="/home">
+          <input
+            type="search"
+            name="bq"
+            class="books-search-input"
+            placeholder="Search title, author, ISBN, genre…"
+            value="<%= bookQuery %>"
+            autocomplete="off"
+          />
+          <input type="hidden" name="uq" value="<%= userQuery %>" />
+          <input type="hidden" name="up" value="<%= userPage %>" />
+          <button type="submit" class="books-search-btn">Search</button>
+          <% if (bookQuery) { %>
+            <a href="/home?uq=<%= encodeURIComponent(userQuery) %>&up=<%= userPage %>" class="books-search-clear">Clear</a>
+          <% } %>
+        </form>
+
+        <% if (books.length === 0) { %>
+          <p class="list-empty"><%= bookQuery ? `No results for "${bookQuery}".` : 'No books registered yet.' %></p>
+        <% } else { %>
+          <div id="books-list-container" class="list-grid">
+            <% books.forEach(book => { %>
+              <div class="list-card list-card-book <%= book.activeLoan ? 'list-card-lent' : '' %>">
+                <div class="list-card-checkbox-wrapper">
+                  <input
+                    type="checkbox"
+                    class="list-card-checkbox"
+                    data-book-id="<%= book.id %>"
+                    <%= book.activeLoan ? 'disabled' : '' %>
+                    aria-label="Select <%= book.title %>"
+                  />
+                </div>
+                <img
+                  class="list-book-cover"
+                  src="<%= book.image_path || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 200'%3E%3Crect width='320' height='200' fill='%23f2effa'/%3E%3Crect x='92' y='34' width='136' height='132' rx='8' fill='%23c6b5e9'/%3E%3Cline x1='104' y1='64' x2='216' y2='64' stroke='%23f2effa' stroke-width='8'/%3E%3Cline x1='104' y1='88' x2='216' y2='88' stroke='%23f2effa' stroke-width='8'/%3E%3Cline x1='104' y1='112' x2='178' y2='112' stroke='%23f2effa' stroke-width='8'/%3E%3C/svg%3E" %>"
+                  alt="<%= book.title %>"
+                />
+                <div class="list-card-body">
+                  <% if (book.activeLoan) { %>
+                    <div class="loan-badge">
+                      <strong class="loan-badge-lender">Lent to: <a href="/users/<%= book.activeLoan.user_id %>/edit" class="loan-badge-user-link"><%= book.activeLoan.user_name %></a></strong>
+                      <span class="loan-badge-date">Since <%= new Date(book.activeLoan.loan_date).toLocaleDateString() %></span>
+                    </div>
+                  <% } %>
+                  <h2 class="list-card-name"><%= book.title %></h2>
+                  <p class="list-card-detail"><strong>Author:</strong> <%= book.author %></p>
+                  <p class="list-card-detail"><strong>ISBN:</strong> <%= book.isbn %></p>
+                  <% if (book.year) { %><p class="list-card-detail"><strong>Year:</strong> <%= book.year %></p><% } %>
+                  <% if (book.genre) { %><p class="list-card-detail"><strong>Genre:</strong> <%= book.genre %></p><% } %>
+                  <% if (book.publ) { %><p class="list-card-detail"><strong>Publisher:</strong> <%= book.publ %></p><% } %>
+                  <% if (book.price) { %><p class="list-card-detail"><strong>Price:</strong> <%= book.price %></p><% } %>
+                  <div class="list-card-actions">
+                    <a href="/books/<%= book.id %>/edit" class="btn-secondary">Edit</a>
+                    <% if (book.activeLoan) { %>
+                      <button
+                        type="button"
+                        class="btn-return-book"
+                        data-loan-id="<%= book.activeLoan.id %>"
+                        data-book-id="<%= book.id %>"
+                        data-book-title="<%= book.title %>"
+                        data-book-author="<%= book.author || '' %>"
+                        data-book-image="<%= book.image_path || '' %>"
+                        data-user-id="<%= book.activeLoan.user_id %>"
+                        data-user-name="<%= book.activeLoan.user_name || '' %>"
+                        data-user-image="<%= book.activeLoan.user_image_path || '' %>"
+                      >Return</button>
+                    <% } %>
+                  </div>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+
+          <% if (bookTotalPages > 1) { %>
+            <nav class="books-pagination">
+              <% if (bookPage > 1) { %>
+                <a class="page-btn" href="/home?bq=<%= encodeURIComponent(bookQuery) %>&bp=<%= bookPage - 1 %>&uq=<%= encodeURIComponent(userQuery) %>&up=<%= userPage %>">&#8592; Prev</a>
+              <% } else { %>
+                <span class="page-btn page-btn-disabled">&#8592; Prev</span>
+              <% } %>
+
+              <span class="page-info">Page <%= bookPage %> of <%= bookTotalPages %></span>
+
+              <% if (bookPage < bookTotalPages) { %>
+                <a class="page-btn" href="/home?bq=<%= encodeURIComponent(bookQuery) %>&bp=<%= bookPage + 1 %>&uq=<%= encodeURIComponent(userQuery) %>&up=<%= userPage %>">Next &#8594;</a>
+              <% } else { %>
+                <span class="page-btn page-btn-disabled">Next &#8594;</span>
+              <% } %>
+            </nav>
+          <% } %>
+        <% } %>
+      </section>
+
+      <section class="home-section-block">
+        <h2 class="home-books-title">Users</h2>
+
+        <form class="books-search-form" method="GET" action="/home">
+          <input
+            type="search"
+            name="uq"
+            class="books-search-input"
+            placeholder="Search name, email, address, phone…"
+            value="<%= userQuery %>"
+            autocomplete="off"
+          />
+          <input type="hidden" name="bq" value="<%= bookQuery %>" />
+          <input type="hidden" name="bp" value="<%= bookPage %>" />
+          <button type="submit" class="books-search-btn">Search</button>
+          <% if (userQuery) { %>
+            <a href="/home?bq=<%= encodeURIComponent(bookQuery) %>&bp=<%= bookPage %>" class="books-search-clear">Clear</a>
+          <% } %>
+        </form>
+
+        <% if (users.length === 0) { %>
+          <p class="list-empty"><%= userQuery ? `No results for "${userQuery}".` : 'No users registered yet.' %></p>
+        <% } else { %>
+          <div class="list-grid">
+            <% users.forEach(user => { %>
+              <div class="list-card list-card-user">
+                <div class="list-card-checkbox-wrapper">
+                  <input
+                    type="checkbox"
+                    class="list-card-checkbox list-user-checkbox"
+                    data-user-id="<%= user.id %>"
+                    data-user-name="<%= user.name %>"
+                    data-user-image="<%= user.image_path || '' %>"
+                    aria-label="Select <%= user.name %>"
+                  />
+                </div>
+                <img
+                  class="list-avatar"
+                  src="<%= user.image_path || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23f2effa'/%3E%3Ccircle cx='60' cy='46' r='22' fill='%23c6b5e9'/%3E%3Cpath d='M24 102c6-19 22-30 36-30s30 11 36 30' fill='%23c6b5e9'/%3E%3C/svg%3E" %>"
+                  alt="<%= user.name %>"
+                />
+                <div class="list-card-body">
+                  <a href="/users/<%= user.id %>/edit" class="list-card-edit-link">
+                    <h2 class="list-card-name">
+                      <%= user.name %>
+                      <% if (user.admin) { %><span class="badge-admin">admin</span><% } %>
+                    </h2>
+                    <p class="list-card-detail"><%= user.email %></p>
+                    <p class="list-card-detail"><%= user.phone %></p>
+                    <p class="list-card-detail"><%= user.occupancy %></p>
+                  </a>
+                  <% const userLoans = loansByUserId[user.id] || []; %>
+                  <% if (userLoans.length > 0) { %>
+                    <div class="user-loans-section">
+                      <strong class="user-loans-title">Lent books:</strong>
+                      <ul class="user-loans-list">
+                        <% userLoans.forEach(loan => { %>
+                          <li class="user-loan-item"><a href="/books/<%= loan.book_id %>/edit" class="user-loan-book-link"><%= loan.book_title %></a></li>
+                        <% }) %>
+                      </ul>
+                    </div>
+                  <% } %>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+
+          <% if (userTotalPages > 1) { %>
+            <nav class="books-pagination">
+              <% if (userPage > 1) { %>
+                <a class="page-btn" href="/home?bq=<%= encodeURIComponent(bookQuery) %>&bp=<%= bookPage %>&uq=<%= encodeURIComponent(userQuery) %>&up=<%= userPage - 1 %>">&#8592; Prev</a>
+              <% } else { %>
+                <span class="page-btn page-btn-disabled">&#8592; Prev</span>
+              <% } %>
+
+              <span class="page-info">Page <%= userPage %> of <%= userTotalPages %></span>
+
+              <% if (userPage < userTotalPages) { %>
+                <a class="page-btn" href="/home?bq=<%= encodeURIComponent(bookQuery) %>&bp=<%= bookPage %>&uq=<%= encodeURIComponent(userQuery) %>&up=<%= userPage + 1 %>">Next &#8594;</a>
+              <% } else { %>
+                <span class="page-btn page-btn-disabled">Next &#8594;</span>
+              <% } %>
+            </nav>
+          <% } %>
+
+          <!-- Lend Button -->
+          <div class="loan-lend-section">
+            <button type="button" id="lend-books-btn" class="btn-primary" disabled>Lend Selected Books</button>
+            <div id="lend-status" class="form-status" hidden></div>
+          </div>
+        <% } %>
+      </section>
+    </div>
+    <% } else { %>
+    <div class="home-books-content">
+      <h2 class="home-books-title">Books</h2>
+
+      <form class="books-search-form" method="GET" action="/home">
+        <input
+          type="search"
+          name="bq"
+          class="books-search-input"
+          placeholder="Search title, author, ISBN, genre…"
+          value="<%= bookQuery %>"
+          autocomplete="off"
+        />
+        <button type="submit" class="books-search-btn">Search</button>
+        <% if (bookQuery) { %>
+          <a href="/home" class="books-search-clear">Clear</a>
+        <% } %>
+      </form>
+
+      <% if (books.length === 0) { %>
+        <p class="list-empty"><%= bookQuery ? `No results for "${bookQuery}".` : 'No books registered yet.' %></p>
+      <% } else { %>
+        <div class="list-grid">
+          <% books.forEach(book => { %>
+            <div class="list-card list-card-book">
+              <img
+                class="list-book-cover"
+                src="<%= book.image_path || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 200'%3E%3Crect width='320' height='200' fill='%23f2effa'/%3E%3Crect x='92' y='34' width='136' height='132' rx='8' fill='%23c6b5e9'/%3E%3Cline x1='104' y1='64' x2='216' y2='64' stroke='%23f2effa' stroke-width='8'/%3E%3Cline x1='104' y1='88' x2='216' y2='88' stroke='%23f2effa' stroke-width='8'/%3E%3Cline x1='104' y1='112' x2='178' y2='112' stroke='%23f2effa' stroke-width='8'/%3E%3C/svg%3E" %>"
+                alt="<%= book.title %>"
+              />
+              <div class="list-card-body">
+                <h2 class="list-card-name"><%= book.title %></h2>
+                <p class="list-card-detail"><strong>Author:</strong> <%= book.author %></p>
+                <p class="list-card-detail"><strong>ISBN:</strong> <%= book.isbn %></p>
+                <% if (book.year)  { %><p class="list-card-detail"><strong>Year:</strong> <%= book.year %></p><% } %>
+                <% if (book.genre) { %><p class="list-card-detail"><strong>Genre:</strong> <%= book.genre %></p><% } %>
+                <% if (book.publ)  { %><p class="list-card-detail"><strong>Publisher:</strong> <%= book.publ %></p><% } %>
+                <% if (book.price) { %><p class="list-card-detail"><strong>Price:</strong> <%= book.price %></p><% } %>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+
+        <% if (bookTotalPages > 1) { %>
+          <nav class="books-pagination">
+            <% if (bookPage > 1) { %>
+              <a class="page-btn" href="/home?bq=<%= encodeURIComponent(bookQuery) %>&bp=<%= bookPage - 1 %>">&#8592; Prev</a>
+            <% } else { %>
+              <span class="page-btn page-btn-disabled">&#8592; Prev</span>
+            <% } %>
+
+            <span class="page-info">Page <%= bookPage %> of <%= bookTotalPages %></span>
+
+            <% if (bookPage < bookTotalPages) { %>
+              <a class="page-btn" href="/home?bq=<%= encodeURIComponent(bookQuery) %>&bp=<%= bookPage + 1 %>">Next &#8594;</a>
+            <% } else { %>
+              <span class="page-btn page-btn-disabled">Next &#8594;</span>
+            <% } %>
+          </nav>
+        <% } %>
+      <% } %>
+    </div>
+    <% } %>
+  </main>
+
+  <% if (isAdmin) { %>
+  <div id="return-modal" class="return-modal" hidden>
+    <div class="return-modal-dialog">
+      <button type="button" id="return-modal-close" class="return-modal-close" aria-label="Close">&times;</button>
+      <h3 class="return-modal-title">Return Book</h3>
+      <div class="return-modal-cards">
+        <div class="return-mini-card">
+          <img id="return-book-image" class="return-mini-cover" src="" alt="Book" />
+          <div class="return-mini-body">
+            <strong id="return-book-title"></strong>
+            <span id="return-book-author"></span>
+          </div>
+        </div>
+        <div class="return-mini-card">
+          <img id="return-user-image" class="return-mini-avatar" src="" alt="User" />
+          <div class="return-mini-body">
+            <strong id="return-user-name"></strong>
+          </div>
+        </div>
+      </div>
+      <label for="return-notes" class="return-notes-label">Return notes</label>
+      <textarea id="return-notes" class="return-notes-input" rows="4" placeholder="Add notes about the return..."></textarea>
+      <div class="return-modal-actions">
+        <button type="button" id="return-cancel-btn" class="btn-secondary">Cancel</button>
+        <button type="button" id="return-confirm-btn" class="btn-primary">Confirm Return</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="lend-receipt-modal" class="lend-receipt-modal" hidden>
+    <div class="lend-receipt-container lend-receipt-a5">
+      <div class="lend-receipt-header">
+        <button type="button" id="lend-receipt-close" class="lend-receipt-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="lend-receipt-content">
+        <h2 class="lend-receipt-title">Book Lending Receipt</h2>
+        
+        <div class="lend-receipt-user-section">
+          <h3 class="lend-receipt-subtitle">Borrower</h3>
+          <div class="lend-receipt-user-card">
+            <img id="lend-receipt-user-avatar" class="lend-receipt-avatar" src="" alt="User" />
+            <div class="lend-receipt-user-info">
+              <strong id="lend-receipt-user-name"></strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="lend-receipt-books-section">
+          <h3 class="lend-receipt-subtitle">Books Lent</h3>
+          <ul id="lend-receipt-books-list" class="lend-receipt-books-list"></ul>
+        </div>
+
+        <div class="lend-receipt-date-section">
+          <p><strong>Date of Lending:</strong> <span id="lend-receipt-date"></span></p>
+        </div>
+
+        <div class="lend-receipt-actions">
+          <button type="button" id="lend-receipt-print-btn" class="btn-primary">Print Receipt</button>
+          <button type="button" id="lend-receipt-done-btn" class="btn-secondary">Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% } %>
+
+  <script>
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/';
+    });
+
+    const backupBtn = document.getElementById('backup-btn');
+    if (backupBtn) {
+      backupBtn.addEventListener('click', () => {
+        window.location.href = '/api/backup/download';
+      });
+    }
+
+    // Loan management (admin only)
+    <% if (isAdmin) { %>
+    const bookCheckboxes = document.querySelectorAll('.list-card-checkbox:not(.list-user-checkbox)');
+    const userCheckboxes = document.querySelectorAll('.list-user-checkbox');
+    const lendBooksBtn = document.getElementById('lend-books-btn');
+    const lendStatus = document.getElementById('lend-status');
+    const returnButtons = document.querySelectorAll('.btn-return-book');
+    const returnModal = document.getElementById('return-modal');
+    const returnModalClose = document.getElementById('return-modal-close');
+    const returnCancelBtn = document.getElementById('return-cancel-btn');
+    const returnConfirmBtn = document.getElementById('return-confirm-btn');
+    const returnNotesInput = document.getElementById('return-notes');
+    const returnBookImage = document.getElementById('return-book-image');
+    const returnBookTitle = document.getElementById('return-book-title');
+    const returnBookAuthor = document.getElementById('return-book-author');
+    const returnUserImage = document.getElementById('return-user-image');
+    const returnUserName = document.getElementById('return-user-name');
+    const lendReceiptModal = document.getElementById('lend-receipt-modal');
+    const lendReceiptClose = document.getElementById('lend-receipt-close');
+    const lendReceiptPrintBtn = document.getElementById('lend-receipt-print-btn');
+    const lendReceiptDoneBtn = document.getElementById('lend-receipt-done-btn');
+    const lendReceiptUserName = document.getElementById('lend-receipt-user-name');
+    const lendReceiptUserAvatar = document.getElementById('lend-receipt-user-avatar');
+    const lendReceiptBooksList = document.getElementById('lend-receipt-books-list');
+    const lendReceiptDate = document.getElementById('lend-receipt-date');
+    let activeReturnButton = null;
+
+    // Safety: keep modals closed until explicitly opened.
+    returnModal.hidden = true;
+    lendReceiptModal.hidden = true;
+
+    const defaultBookCover = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 200'%3E%3Crect width='320' height='200' fill='%23f2effa'/%3E%3Crect x='92' y='34' width='136' height='132' rx='8' fill='%23c6b5e9'/%3E%3Cline x1='104' y1='64' x2='216' y2='64' stroke='%23f2effa' stroke-width='8'/%3E%3Cline x1='104' y1='88' x2='216' y2='88' stroke='%23f2effa' stroke-width='8'/%3E%3Cline x1='104' y1='112' x2='178' y2='112' stroke='%23f2effa' stroke-width='8'/%3E%3C/svg%3E";
+    const defaultUserAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23f2effa'/%3E%3Ccircle cx='60' cy='46' r='22' fill='%23c6b5e9'/%3E%3Cpath d='M24 102c6-19 22-30 36-30s30 11 36 30' fill='%23c6b5e9'/%3E%3C/svg%3E";
+
+    function openReturnModal(button) {
+      activeReturnButton = button;
+      returnBookImage.src = button.dataset.bookImage || defaultBookCover;
+      returnBookTitle.textContent = button.dataset.bookTitle || 'Unknown book';
+      returnBookAuthor.textContent = button.dataset.bookAuthor || '';
+      returnUserImage.src = button.dataset.userImage || defaultUserAvatar;
+      returnUserName.textContent = button.dataset.userName || 'Unknown user';
+      returnNotesInput.value = '';
+      returnModal.hidden = false;
+    }
+
+    function closeReturnModal() {
+      returnModal.hidden = true;
+      activeReturnButton = null;
+      returnNotesInput.value = '';
+      returnConfirmBtn.disabled = false;
+      returnConfirmBtn.textContent = 'Confirm Return';
+    }
+
+    function openLendReceipt(userName, userImage, books, lendDate) {
+      lendReceiptUserName.textContent = userName;
+      lendReceiptUserAvatar.src = userImage || defaultUserAvatar;
+      lendReceiptDate.textContent = lendDate;
+      
+      // Clear and populate books list
+      lendReceiptBooksList.innerHTML = '';
+      books.forEach(book => {
+        const li = document.createElement('li');
+        li.className = 'lend-receipt-book-item';
+        li.innerHTML = `<strong>${book.title}</strong><span class="lend-receipt-book-author">${book.author || 'Unknown Author'}</span>`;
+        lendReceiptBooksList.appendChild(li);
+      });
+      
+      lendReceiptModal.hidden = false;
+    }
+
+    function closeLendReceipt() {
+      lendReceiptModal.hidden = true;
+      // Clear all book and user checkboxes before reloading
+      bookCheckboxes.forEach(cb => cb.checked = false);
+      userCheckboxes.forEach(cb => cb.checked = false);
+      updateLendBtnState();
+      window.location.reload();
+    }
+
+    function updateLendBtnState() {
+      const selectedBooks = Array.from(bookCheckboxes).filter(cb => cb.checked);
+      const selectedUsers = Array.from(userCheckboxes).filter(cb => cb.checked);
+      lendBooksBtn.disabled = selectedBooks.length === 0 || selectedUsers.length === 0;
+    }
+
+    bookCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', updateLendBtnState);
+    });
+
+    userCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', updateLendBtnState);
+    });
+
+    lendBooksBtn.addEventListener('click', async () => {
+      lendStatus.hidden = true;
+
+      const selectedBooks = Array.from(bookCheckboxes).filter(cb => cb.checked);
+      const selectedUsers = Array.from(userCheckboxes).filter(cb => cb.checked);
+
+      if (selectedBooks.length === 0) {
+        lendStatus.textContent = 'No books selected.';
+        lendStatus.className = 'form-status error';
+        lendStatus.hidden = false;
+        return;
+      }
+
+      if (selectedUsers.length === 0) {
+        lendStatus.textContent = 'No users selected.';
+        lendStatus.className = 'form-status error';
+        lendStatus.hidden = false;
+        return;
+      }
+
+      lendBooksBtn.disabled = true;
+      lendBooksBtn.textContent = 'Processing...';
+
+      try {
+        // For each selected user, lend all selected books
+        const allLoans = [];
+        const booksData = selectedBooks.map(checkbox => {
+          const bookCard = checkbox.closest('.list-card-book');
+          const title = bookCard.querySelector('.list-card-name').textContent;
+          const authorParagraph = bookCard.querySelector('.list-card-detail');
+          const author = authorParagraph ? authorParagraph.textContent.replace('Author: ', '').trim() : 'Unknown Author';
+          return { id: parseInt(checkbox.dataset.bookId, 10), title, author };
+        });
+
+        for (const userCheckbox of selectedUsers) {
+          const userId = parseInt(userCheckbox.dataset.userId, 10);
+          for (const bookCheckbox of selectedBooks) {
+            allLoans.push(
+              fetch('/api/loans', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  book_id: parseInt(bookCheckbox.dataset.bookId, 10),
+                  user_id: userId,
+                }),
+              }).then(res => res.json())
+            );
+          }
+        }
+
+        const results = await Promise.all(allLoans);
+        const errors = results.filter(r => !r.loanId && r.message);
+        if (errors.length > 0) {
+          throw new Error(errors[0].message || 'Failed to lend some books.');
+        }
+
+        // Get the first selected user's data for receipt
+        const firstUserCheckbox = selectedUsers[0];
+        const userName = firstUserCheckbox.dataset.userName;
+        const userImage = firstUserCheckbox.dataset.userImage;
+        const lendDate = new Date().toLocaleDateString();
+
+        // Show receipt for each selected user
+        openLendReceipt(userName, userImage, booksData, lendDate);
+
+        lendStatus.textContent = `Successfully lent ${selectedBooks.length} book(s) to ${selectedUsers.length} user(s)!`;
+        lendStatus.className = 'form-status success';
+        lendStatus.hidden = false;
+      } catch (error) {
+        lendStatus.textContent = error.message || 'Failed to lend books.';
+        lendStatus.className = 'form-status error';
+        lendStatus.hidden = false;
+      } finally {
+        lendBooksBtn.disabled = false;
+        lendBooksBtn.textContent = 'Lend Selected Books';
+      }
+    });
+
+    // Return book functionality
+    returnButtons.forEach(button => {
+      button.addEventListener('click', async (event) => {
+        event.preventDefault();
+        openReturnModal(button);
+      });
+    });
+
+    returnModalClose.addEventListener('click', closeReturnModal);
+    returnCancelBtn.addEventListener('click', closeReturnModal);
+    returnModal.addEventListener('click', (event) => {
+      if (event.target === returnModal) {
+        closeReturnModal();
+      }
+    });
+
+    returnConfirmBtn.addEventListener('click', async () => {
+      if (!activeReturnButton) {
+        return;
+      }
+
+      const loanId = activeReturnButton.dataset.loanId;
+      const notes = returnNotesInput.value.trim();
+
+      returnConfirmBtn.disabled = true;
+      returnConfirmBtn.textContent = 'Returning...';
+
+      try {
+        const response = await fetch(`/api/loans/${loanId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to return book.');
+        }
+
+        closeReturnModal();
+        lendStatus.textContent = 'Book returned successfully!';
+        lendStatus.className = 'form-status success';
+        lendStatus.hidden = false;
+
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } catch (error) {
+        lendStatus.textContent = error.message || 'Failed to return book.';
+        lendStatus.className = 'form-status error';
+        lendStatus.hidden = false;
+        returnConfirmBtn.disabled = false;
+        returnConfirmBtn.textContent = 'Confirm Return';
+      }
+    });
+
+    // Lend receipt functionality
+    lendReceiptClose.addEventListener('click', closeLendReceipt);
+    lendReceiptDoneBtn.addEventListener('click', closeLendReceipt);
+    lendReceiptPrintBtn.addEventListener('click', () => {
+      window.print();
+    });
+    lendReceiptModal.addEventListener('click', (event) => {
+      if (event.target === lendReceiptModal) {
+        closeLendReceipt();
+      }
+    });
+    <% } %>
+  </script>
+</body>
+</html>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register Book</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="card card-wide card-tall">
+    <h1><%= formTitle %></h1>
+    <p class="card-subtitle"><%= formSubtitle %></p>
+
+    <div class="book-preview-wrap">
+      <img
+        id="book-preview"
+        class="book-preview"
+        src="<%= book?.image_path || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 200'%3E%3Crect width='320' height='200' fill='%23f2effa'/%3E%3Crect x='92' y='34' width='136' height='132' rx='8' fill='%23c6b5e9'/%3E%3Cline x1='104' y1='64' x2='216' y2='64' stroke='%23f2effa' stroke-width='8'/%3E%3Cline x1='104' y1='88' x2='216' y2='88' stroke='%23f2effa' stroke-width='8'/%3E%3Cline x1='104' y1='112' x2='178' y2='112' stroke='%23f2effa' stroke-width='8'/%3E%3C/svg%3E" %>"
+        alt="Book cover preview"
+      />
+    </div>
+
+    <div id="book-status" class="form-status" hidden></div>
+
+    <form id="book-form" action="#" method="POST" enctype="multipart/form-data" class="form-detailed">
+      <div class="field-group">
+        <label for="genre">Genre</label>
+        <div class="genre-row">
+          <select id="genre" name="genre" class="genre-select">
+            <option value="">— select genre —</option>
+            <% genres.forEach(g => { %>
+              <option value="<%= g.name %>" <%= book?.genre === g.name ? 'selected' : '' %>><%= g.name %></option>
+            <% }) %>
+          </select>
+          <button type="button" id="genre-add-btn" class="btn-genre-add" title="Add new genre">+</button>
+        </div>
+        <div id="genre-new-row" class="genre-new-row">
+          <input type="text" id="genre-input" class="genre-input" placeholder="new genre…" />
+          <button type="button" id="genre-save-btn" class="btn-genre-save">ADD</button>
+        </div>
+        <div id="genre-status" class="form-status" hidden></div>
+      </div>
+      <div class="field-group">
+        <label for="isbn">ISBN</label>
+        <input type="text" id="isbn" name="isbn" placeholder="leave blank for auto-generated ISBN" value="<%= book?.isbn || '' %>" />
+      </div>
+      <div class="field-group">
+        <label for="title">Title</label>
+        <input type="text" id="title" name="title" placeholder="title" value="<%= book?.title || '' %>" required />
+      </div>
+      <div class="field-group">
+        <label for="author">Author</label>
+        <input type="text" id="author" name="author" placeholder="author" value="<%= book?.author || '' %>" required />
+      </div>
+      <div class="field-group">
+        <label for="year">Year</label>
+        <input type="text" id="year" name="year" placeholder="2024" value="<%= book?.year || '' %>" />
+      </div>
+      <div class="field-group">
+        <label for="publ">Publisher</label>
+        <input type="text" id="publ" name="publ" placeholder="publisher" value="<%= book?.publ || '' %>" />
+      </div>
+      <div class="field-group">
+        <label for="ver">Edition</label>
+        <input type="text" id="ver" name="ver" placeholder="edition" value="<%= book?.ver || '' %>" />
+      </div>
+      <div class="field-group">
+        <label for="keys">Keywords</label>
+        <input type="text" id="keys" name="keys" placeholder="keyword, keyword" value="<%= book?.keys || '' %>" />
+      </div>
+      <div class="field-group">
+        <label for="price">Price</label>
+        <input type="text" id="price" name="price" placeholder="12.34" value="<%= book?.price || '' %>" />
+      </div>
+      <div class="field-group">
+        <label for="notes">Notes</label>
+        <input type="text" id="notes" name="notes" placeholder="notes" value="<%= book?.notes || '' %>" />
+      </div>
+      <div class="field-group">
+        <label for="image">Book Image</label>
+        <input type="file" id="image" name="image" accept="image/*" class="file-input" />
+      </div>
+
+      <button id="book-submit" type="submit" class="btn-primary"><%= submitLabel %></button>
+    </form>
+
+    <% if (isEditMode && loanHistory && loanHistory.length > 0) { %>
+    <div class="loan-history-section">
+      <h3>Loan History</h3>
+      <table class="loan-history-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Loan Date</th>
+            <th>Return Date</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% loanHistory.forEach(loan => { %>
+          <tr>
+            <td><%= loan.user_name %></td>
+            <td><%= new Date(loan.loan_date).toLocaleDateString() %></td>
+            <td><%= loan.return_date ? new Date(loan.return_date).toLocaleDateString() : '–' %></td>
+            <td><%= loan.notes || '–' %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% } %>
+
+    <a href="<%= backUrl %>" class="signup-link">Back</a>
+  </div>
+
+  <script>
+    const defaultBookPreview = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 200'%3E%3Crect width='320' height='200' fill='%23f2effa'/%3E%3Crect x='92' y='34' width='136' height='132' rx='8' fill='%23c6b5e9'/%3E%3Cline x1='104' y1='64' x2='216' y2='64' stroke='%23f2effa' stroke-width='8'/%3E%3Cline x1='104' y1='88' x2='216' y2='88' stroke='%23f2effa' stroke-width='8'/%3E%3Cline x1='104' y1='112' x2='178' y2='112' stroke='%23f2effa' stroke-width='8'/%3E%3C/svg%3E";
+    const isEditMode = <%= isEditMode ? 'true' : 'false' %>;
+    const bookId = <%= book?.id || 'null' %>;
+    const bookForm = document.getElementById('book-form');
+    const bookStatus = document.getElementById('book-status');
+    const bookSubmit = document.getElementById('book-submit');
+    const imageInput = document.getElementById('image');
+    const bookPreview = document.getElementById('book-preview');
+    let previewUrl;
+
+    function setStatus(message, type) {
+      bookStatus.textContent = message;
+      bookStatus.className = `form-status ${type}`;
+      bookStatus.hidden = false;
+    }
+
+    imageInput.addEventListener('change', (event) => {
+      const [file] = event.target.files;
+
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        previewUrl = null;
+      }
+
+      if (!file) {
+        bookPreview.src = defaultBookPreview;
+        return;
+      }
+
+      previewUrl = URL.createObjectURL(file);
+      bookPreview.src = previewUrl;
+    });
+
+    const genreAddBtn  = document.getElementById('genre-add-btn');
+    const genreNewRow  = document.getElementById('genre-new-row');
+    const genreInput   = document.getElementById('genre-input');
+    const genreSaveBtn = document.getElementById('genre-save-btn');
+    const genreSelect  = document.getElementById('genre');
+    const genreStatus  = document.getElementById('genre-status');
+
+    genreAddBtn.addEventListener('click', () => {
+      genreNewRow.classList.toggle('visible');
+      genreStatus.hidden = true;
+      if (genreNewRow.classList.contains('visible')) genreInput.focus();
+    });
+
+    genreSaveBtn.addEventListener('click', async () => {
+      const name = genreInput.value.trim().toLowerCase();
+      if (!name) return;
+
+      genreSaveBtn.disabled = true;
+      genreStatus.hidden = true;
+
+      try {
+        const response = await fetch('/api/books/genres', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name }),
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.message || 'Could not add genre.');
+
+        const option = document.createElement('option');
+        option.value = payload.genre.name;
+        option.textContent = payload.genre.name;
+        genreSelect.appendChild(option);
+        genreSelect.value = payload.genre.name;
+
+        genreInput.value = '';
+        genreNewRow.classList.remove('visible');
+      } catch (err) {
+        genreStatus.textContent = err.message;
+        genreStatus.className = 'form-status error';
+        genreStatus.hidden = false;
+      } finally {
+        genreSaveBtn.disabled = false;
+      }
+    });
+
+    genreInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); genreSaveBtn.click(); }
+    });
+
+    bookForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      bookSubmit.disabled = true;
+      bookSubmit.textContent = isEditMode ? 'SAVING...' : 'REGISTERING...';
+      bookStatus.hidden = true;
+
+      try {
+        const response = await fetch(isEditMode ? `/api/books/${bookId}` : '/api/books', {
+          method: isEditMode ? 'PUT' : 'POST',
+          body: new FormData(bookForm),
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload.message || (isEditMode ? 'Could not save book.' : 'Could not register book.'));
+        }
+
+        if (isEditMode) {
+          setStatus(payload.message, 'success');
+          return;
+        }
+
+        bookForm.reset();
+        bookPreview.src = defaultBookPreview;
+        if (previewUrl) {
+          URL.revokeObjectURL(previewUrl);
+          previewUrl = null;
+        }
+        genreNewRow.classList.remove('visible');
+        setStatus(payload.message, 'success');
+      } catch (error) {
+        setStatus(error.message, 'error');
+      } finally {
+        bookSubmit.disabled = false;
+        bookSubmit.textContent = <%= JSON.stringify(submitLabel) %>;
+      }
+    });
+  </script>
+</body>
+</html>

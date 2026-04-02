@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="card card-wide card-tall">
+    <h1>Sign Up</h1>
+    <p class="card-subtitle">Create your account to get started.</p>
+    <div class="avatar-preview-wrap">
+      <img
+        id="profile-preview"
+        class="avatar-preview"
+        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23f2effa'/%3E%3Ccircle cx='60' cy='46' r='22' fill='%23c6b5e9'/%3E%3Cpath d='M24 102c6-19 22-30 36-30s30 11 36 30' fill='%23c6b5e9'/%3E%3C/svg%3E"
+        alt="Profile preview"
+      />
+      <span id="signup-name-preview" class="signup-name-preview">Your name</span>
+    </div>
+    <div id="signup-status" class="form-status" hidden></div>
+    <form id="signup-form" action="#" method="POST" enctype="multipart/form-data" class="form-detailed">
+      <div class="field-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" name="name" placeholder="full name" autocomplete="name" required />
+      </div>
+      <div class="field-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" placeholder="your@email.com" autocomplete="email" required />
+      </div>
+      <div class="field-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="password" autocomplete="new-password" required />
+      </div>
+      <div class="field-group">
+        <label for="confirm_password">Confirm Password</label>
+        <input type="password" id="confirm_password" name="confirm_password" placeholder="confirm password" autocomplete="new-password" required />
+      </div>
+      <div class="field-group">
+        <label for="address">Address</label>
+        <input type="text" id="address" name="address" placeholder="address" autocomplete="street-address" required />
+      </div>
+      <div class="field-group">
+        <label for="phone">Phone</label>
+        <input type="tel" id="phone" name="phone" placeholder="0123456789" autocomplete="tel" required />
+      </div>
+      <div class="field-group">
+        <label for="occupancy">Occupation</label>
+        <input type="text" id="occupancy" name="occupancy" placeholder="occupation" required />
+      </div>
+      <div class="field-group">
+        <label for="birth_date">Birth Date</label>
+        <input type="date" id="birth_date" name="birth_date" required />
+      </div>
+      <div class="field-group">
+        <label for="notes">Notes</label>
+        <input type="text" id="notes" name="notes" placeholder="notes" />
+      </div>
+      <div class="field-group">
+        <label for="image">Profile Image</label>
+        <input type="file" id="image" name="image" accept="image/*" class="file-input" />
+      </div>
+      <button id="signup-submit" type="submit" class="btn-primary">CREATE ACCOUNT</button>
+    </form>
+    <a href="/" class="signup-link">Back to Sign In</a>
+  </div>
+
+  <script>
+    const defaultPreview = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23f2effa'/%3E%3Ccircle cx='60' cy='46' r='22' fill='%23c6b5e9'/%3E%3Cpath d='M24 102c6-19 22-30 36-30s30 11 36 30' fill='%23c6b5e9'/%3E%3C/svg%3E";
+    const signupForm = document.getElementById('signup-form');
+    const signupStatus = document.getElementById('signup-status');
+    const signupSubmit = document.getElementById('signup-submit');
+    const nameInput = document.getElementById('name');
+    const signupNamePreview = document.getElementById('signup-name-preview');
+    const imageInput = document.getElementById('image');
+    const profilePreview = document.getElementById('profile-preview');
+    let previewUrl;
+
+    function setStatus(message, type) {
+      signupStatus.textContent = message;
+      signupStatus.className = `form-status ${type}`;
+      signupStatus.hidden = false;
+    }
+
+    function syncNamePreview() {
+      const name = nameInput.value.trim();
+      signupNamePreview.textContent = name || 'Your name';
+    }
+
+    nameInput.addEventListener('input', syncNamePreview);
+
+    imageInput.addEventListener('change', (event) => {
+      const [file] = event.target.files;
+
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        previewUrl = null;
+      }
+
+      if (!file) {
+        profilePreview.src = defaultPreview;
+        return;
+      }
+
+      previewUrl = URL.createObjectURL(file);
+      profilePreview.src = previewUrl;
+    });
+
+    signupForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      signupSubmit.disabled = true;
+      signupSubmit.textContent = 'CREATING...';
+      signupStatus.hidden = true;
+
+      try {
+        const response = await fetch('/api/users', {
+          method: 'POST',
+          body: new FormData(signupForm),
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload.message || 'Could not create account.');
+        }
+
+        signupForm.reset();
+        profilePreview.src = defaultPreview;
+        if (previewUrl) {
+          URL.revokeObjectURL(previewUrl);
+          previewUrl = null;
+        }
+        syncNamePreview();
+        setStatus(payload.message, 'success');
+      } catch (error) {
+        setStatus(error.message, 'error');
+      } finally {
+        signupSubmit.disabled = false;
+        signupSubmit.textContent = 'CREATE ACCOUNT';
+      }
+    });
+
+    syncNamePreview();
+  </script>
+</body>
+</html>

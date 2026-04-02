@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Users</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="page-list">
+  <header class="list-header">
+    <a href="/home" class="list-back">&#8592; Home</a>
+    <h1 class="list-title">All Users</h1>
+  </header>
+
+  <main class="list-main">
+    <% if (users.length === 0) { %>
+      <p class="list-empty">No users registered yet.</p>
+    <% } else { %>
+      <div class="list-grid">
+        <% users.forEach(user => { %>
+          <% if (isAdmin) { %>
+            <a href="/users/<%= user.id %>/edit" class="list-card list-card-link">
+          <% } else { %>
+            <div class="list-card">
+          <% } %>
+            <img
+              class="list-avatar"
+              src="<%= user.image_path || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23f2effa'/%3E%3Ccircle cx='60' cy='46' r='22' fill='%23c6b5e9'/%3E%3Cpath d='M24 102c6-19 22-30 36-30s30 11 36 30' fill='%23c6b5e9'/%3E%3C/svg%3E" %>"
+              alt="<%= user.name %>"
+            />
+            <div class="list-card-body">
+              <h2 class="list-card-name">
+                <%= user.name %>
+                <% if (user.admin) { %><span class="badge-admin">admin</span><% } %>
+              </h2>
+              <p class="list-card-detail"><%= user.email %></p>
+              <p class="list-card-detail"><%= user.phone %></p>
+              <p class="list-card-detail"><%= user.occupancy %></p>
+            </div>
+          <% if (isAdmin) { %>
+            </a>
+          <% } else { %>
+            </div>
+          <% } %>
+        <% }) %>
+      </div>
+    <% } %>
+  </main>
+</body>
+</html>

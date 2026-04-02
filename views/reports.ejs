@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="page-home">
+  <header class="home-header">
+    <div class="home-user">
+      <span class="home-user-name"><%= name %></span>
+      <a class="home-action-link home-action-link-header" href="/home">Home</a>
+      <a class="home-action-link home-action-link-header" href="/reports">Reports</a>
+      <% if (isAdmin) { %>
+      <button type="button" id="backup-btn" class="home-action-link home-action-link-header">Backup</button>
+      <a class="home-action-link home-action-link-header" href="/books/new">Register a Book</a>
+      <% } %>
+      <a href="/profile" class="home-avatar-link" aria-label="Edit profile">
+        <img
+          class="home-user-avatar"
+          src="<%= imagePath || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23f2effa'/%3E%3Ccircle cx='60' cy='46' r='22' fill='%23c6b5e9'/%3E%3Cpath d='M24 102c6-19 22-30 36-30s30 11 36 30' fill='%23c6b5e9'/%3E%3C/svg%3E" %>"
+          alt="<%= name %>'s profile picture"
+        />
+      </a>
+      <button id="logout-btn" class="btn-logout" title="Log out">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="home-main">
+    <div class="home-books-content">
+      <div class="home-admin-topbar">
+        <h1>Reports</h1>
+      </div>
+
+      <section class="home-section-block">
+        <h2 class="home-books-title">Report 1: Loans by Date Range</h2>
+        <div class="report-filter-section">
+          <div class="report-filter-group">
+            <label for="report1-start-date">Start Date:</label>
+            <input type="date" id="report1-start-date" class="report-input" />
+          </div>
+          <div class="report-filter-group">
+            <label for="report1-end-date">End Date:</label>
+            <input type="date" id="report1-end-date" class="report-input" />
+          </div>
+          <button id="report1-generate-btn" class="btn-primary">Generate Report</button>
+        </div>
+        <div id="report1-status" class="form-status" hidden></div>
+        <div id="report1-results" class="report-results" hidden>
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>Borrower</th>
+                <th>Book</th>
+                <th>Author</th>
+                <th>Loan Date</th>
+                <th>Return Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="report1-tbody">
+            </tbody>
+          </table>
+          <div class="report-histogram-container" hidden id="report1-histogram-container">
+            <h3 class="report-histogram-title">Loan Distribution by Borrower Age</h3>
+            <canvas id="report1-histogram"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="home-section-block">
+        <h2 class="home-books-title">Report 2: Loans by Borrower Age (Current Year)</h2>
+        <div class="report-filter-section">
+          <div class="report-filter-group">
+            <label for="report2-start-age">Start Age (years):</label>
+            <input type="number" id="report2-start-age" class="report-input" min="0" max="150" />
+          </div>
+          <div class="report-filter-group">
+            <label for="report2-end-age">End Age (years):</label>
+            <input type="number" id="report2-end-age" class="report-input" min="0" max="150" />
+          </div>
+          <button id="report2-generate-btn" class="btn-primary">Generate Report</button>
+        </div>
+        <div id="report2-status" class="form-status" hidden></div>
+        <div id="report2-results" class="report-results" hidden>
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>Borrower</th>
+                <th>Age</th>
+                <th>Book</th>
+                <th>Author</th>
+                <th>Loan Date</th>
+                <th>Return Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="report2-tbody">
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="home-section-block">
+        <h2 class="home-books-title">Report 3: Users With Active Loans</h2>
+        <div class="report-filter-section report-filter-section-single">
+          <button id="report3-generate-btn" class="btn-primary">Generate Report</button>
+        </div>
+        <div id="report3-status" class="form-status" hidden></div>
+        <div id="report3-results" class="report-results" hidden>
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Active Loaned Books</th>
+              </tr>
+            </thead>
+            <tbody id="report3-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="home-section-block">
+        <h2 class="home-books-title">Report 4: Books Lent Now</h2>
+        <div class="report-filter-section report-filter-section-single">
+          <button id="report4-generate-btn" class="btn-primary">Generate Report</button>
+        </div>
+        <div id="report4-status" class="form-status" hidden></div>
+        <div id="report4-results" class="report-results" hidden>
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>Book</th>
+                <th>Author</th>
+                <th>Lent To</th>
+                <th>Loan Date</th>
+              </tr>
+            </thead>
+            <tbody id="report4-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="home-section-block">
+        <h2 class="home-books-title">Report 5: Users by Total Number of Loans</h2>
+        <div class="report-filter-section report-filter-section-single">
+          <button id="report5-generate-btn" class="btn-primary">Generate Report</button>
+        </div>
+        <div id="report5-status" class="form-status" hidden></div>
+        <div id="report5-results" class="report-results" hidden>
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Total Loans</th>
+              </tr>
+            </thead>
+            <tbody id="report5-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="home-section-block">
+        <h2 class="home-books-title">Report 6: Books by Total Number of Loans</h2>
+        <div class="report-filter-section report-filter-section-single">
+          <button id="report6-generate-btn" class="btn-primary">Generate Report</button>
+        </div>
+        <div id="report6-status" class="form-status" hidden></div>
+        <div id="report6-results" class="report-results" hidden>
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>Book</th>
+                <th>Author</th>
+                <th>Total Loans</th>
+              </tr>
+            </thead>
+            <tbody id="report6-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/';
+    });
+
+    const backupBtn = document.getElementById('backup-btn');
+    if (backupBtn) {
+      backupBtn.addEventListener('click', () => {
+        window.location.href = '/api/backup/download';
+      });
+    }
+
+    // Report 1: Loans by Date Range
+    const report1GenerateBtn = document.getElementById('report1-generate-btn');
+    const report1StartInput = document.getElementById('report1-start-date');
+    const report1EndInput = document.getElementById('report1-end-date');
+    const report1Status = document.getElementById('report1-status');
+    const report1Results = document.getElementById('report1-results');
+    const report1Tbody = document.getElementById('report1-tbody');
+    const report1HistogramContainer = document.getElementById('report1-histogram-container');
+    let report1Chart = null;
+
+    function calculateAge(birthDate) {
+      const today = new Date();
+      const birth = new Date(birthDate);
+      let age = today.getFullYear() - birth.getFullYear();
+      const monthDiff = today.getMonth() - birth.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+      return Math.max(0, age);
+    }
+
+    function createAgeHistogram(loansData) {
+      // Custom age intervals
+      const intervals = [
+        { label: '[7-11)', min: 7, max: 11 },
+        { label: '[11-14)', min: 11, max: 14 },
+        { label: '[14-18)', min: 14, max: 18 },
+        { label: '[18-22)', min: 18, max: 22 },
+        { label: '[23-30)', min: 23, max: 30 },
+        { label: '[30-40)', min: 30, max: 40 },
+        { label: '[40-50)', min: 40, max: 50 },
+        { label: '[50-60)', min: 50, max: 60 },
+        { label: '[60-70)', min: 60, max: 70 },
+        { label: '>70', min: 70, max: Infinity },
+      ];
+
+      // Initialize bins
+      const bins = {};
+      intervals.forEach(interval => {
+        bins[interval.label] = 0;
+      });
+
+      // Count loans in each interval
+      loansData.forEach(loan => {
+        const age = calculateAge(loan.birth_date);
+        const interval = intervals.find(i => age >= i.min && age < i.max);
+        if (interval) {
+          bins[interval.label]++;
+        }
+      });
+
+      // Prepare chart data
+      const labels = intervals.map(i => i.label);
+      const data = labels.map(label => bins[label]);
+
+      // Destroy existing chart if it exists
+      if (report1Chart) {
+        report1Chart.destroy();
+      }
+
+      // Create new chart
+      const canvas = document.getElementById('report1-histogram');
+      report1Chart = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Number of Loans',
+            data: data,
+            backgroundColor: '#a94fdb',
+            borderColor: '#7d3b9d',
+            borderWidth: 2,
+            borderRadius: 6,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              display: true,
+              labels: {
+                color: '#4e3f70',
+                font: {
+                  size: 12,
+                  weight: 600,
+                },
+              },
+            },
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Age Range (years)',
+                color: '#4e3f70',
+              },
+              ticks: {
+                color: '#6f6b82',
+              },
+              grid: {
+                color: '#f0ebf9',
+              },
+            },
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Number of Loans',
+                color: '#4e3f70',
+              },
+              ticks: {
+                color: '#6f6b82',
+                stepSize: 1,
+              },
+              grid: {
+                color: '#f0ebf9',
+              },
+            },
+          },
+        },
+      });
+    }
+
+    report1GenerateBtn.addEventListener('click', async () => {
+      const startDate = report1StartInput.value;
+      const endDate = report1EndInput.value;
+
+      if (!startDate || !endDate) {
+        report1Status.textContent = 'Please select both start and end dates.';
+        report1Status.className = 'form-status error';
+        report1Status.hidden = false;
+        report1Results.hidden = true;
+        return;
+      }
+
+      if (startDate > endDate) {
+        report1Status.textContent = 'Start date must be before end date.';
+        report1Status.className = 'form-status error';
+        report1Status.hidden = false;
+        report1Results.hidden = true;
+        return;
+      }
+
+      report1GenerateBtn.disabled = true;
+      report1GenerateBtn.textContent = 'Loading...';
+      report1Status.hidden = true;
+      report1Results.hidden = true;
+
+      try {
+        const response = await fetch(`/api/reports/loans-by-date?startDate=${startDate}&endDate=${endDate}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to generate report.');
+        }
+
+        // Populate table
+        report1Tbody.innerHTML = '';
+        if (data.loans.length === 0) {
+          report1Status.textContent = 'No loans found for this date range.';
+          report1Status.className = 'form-status';
+          report1Status.hidden = false;
+          report1Results.hidden = true;
+          report1HistogramContainer.hidden = true;
+        } else {
+          data.loans.forEach(loan => {
+            const row = document.createElement('tr');
+            const returnDate = loan.return_date ? new Date(loan.return_date).toLocaleDateString() : 'N/A';
+            const status = loan.return_date ? 'Returned' : 'Active';
+            row.innerHTML = `
+              <td>${loan.user_name}</td>
+              <td>${loan.book_title}</td>
+              <td>${loan.book_author || '-'}</td>
+              <td>${new Date(loan.loan_date).toLocaleDateString()}</td>
+              <td>${returnDate}</td>
+              <td><span class="loan-status-${status.toLowerCase()}">${status}</span></td>
+            `;
+            report1Tbody.appendChild(row);
+          });
+          report1Results.hidden = false;
+          
+          // Create histogram
+          createAgeHistogram(data.loans);
+          report1HistogramContainer.hidden = false;
+        }
+      } catch (error) {
+        report1Status.textContent = error.message || 'Failed to generate report.';
+        report1Status.className = 'form-status error';
+        report1Status.hidden = false;
+        report1Results.hidden = true;
+        report1HistogramContainer.hidden = true;
+      } finally {
+        report1GenerateBtn.disabled = false;
+        report1GenerateBtn.textContent = 'Generate Report';
+      }
+    });
+
+    // Report 2: Loans by Borrower Age (Current Year)
+    const report2GenerateBtn = document.getElementById('report2-generate-btn');
+    const report2StartInput = document.getElementById('report2-start-age');
+    const report2EndInput = document.getElementById('report2-end-age');
+    const report2Status = document.getElementById('report2-status');
+    const report2Results = document.getElementById('report2-results');
+    const report2Tbody = document.getElementById('report2-tbody');
+
+    report2GenerateBtn.addEventListener('click', async () => {
+      const startAge = parseInt(report2StartInput.value, 10);
+      const endAge = parseInt(report2EndInput.value, 10);
+
+      if (isNaN(startAge) || isNaN(endAge)) {
+        report2Status.textContent = 'Please enter both start and end ages.';
+        report2Status.className = 'form-status error';
+        report2Status.hidden = false;
+        report2Results.hidden = true;
+        return;
+      }
+
+      if (startAge > endAge) {
+        report2Status.textContent = 'Start age must be less than or equal to end age.';
+        report2Status.className = 'form-status error';
+        report2Status.hidden = false;
+        report2Results.hidden = true;
+        return;
+      }
+
+      report2GenerateBtn.disabled = true;
+      report2GenerateBtn.textContent = 'Loading...';
+      report2Status.hidden = true;
+      report2Results.hidden = true;
+
+      try {
+        const response = await fetch(`/api/reports/loans-by-age?startAge=${startAge}&endAge=${endAge}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to generate report.');
+        }
+
+        // Populate table
+        report2Tbody.innerHTML = '';
+        if (data.loans.length === 0) {
+          report2Status.textContent = 'No loans found for this age range.';
+          report2Status.className = 'form-status';
+          report2Status.hidden = false;
+          report2Results.hidden = true;
+        } else {
+          data.loans.forEach(loan => {
+            const row = document.createElement('tr');
+            const returnDate = loan.return_date ? new Date(loan.return_date).toLocaleDateString() : 'N/A';
+            const status = loan.return_date ? 'Returned' : 'Active';
+            row.innerHTML = `
+              <td>${loan.user_name}</td>
+              <td>${loan.user_age}</td>
+              <td>${loan.book_title}</td>
+              <td>${loan.book_author || '-'}</td>
+              <td>${new Date(loan.loan_date).toLocaleDateString()}</td>
+              <td>${returnDate}</td>
+              <td><span class="loan-status-${status.toLowerCase()}">${status}</span></td>
+            `;
+            report2Tbody.appendChild(row);
+          });
+          report2Results.hidden = false;
+        }
+      } catch (error) {
+        report2Status.textContent = error.message || 'Failed to generate report.';
+        report2Status.className = 'form-status error';
+        report2Status.hidden = false;
+        report2Results.hidden = true;
+      } finally {
+        report2GenerateBtn.disabled = false;
+        report2GenerateBtn.textContent = 'Generate Report';
+      }
+    });
+
+    function setReportStatus(statusEl, message, isError) {
+      statusEl.textContent = message;
+      statusEl.className = isError ? 'form-status error' : 'form-status';
+      statusEl.hidden = false;
+    }
+
+    function formatDate(value) {
+      return value ? new Date(value).toLocaleDateString() : 'N/A';
+    }
+
+    // Report 3: Users With Active Loans
+    const report3GenerateBtn = document.getElementById('report3-generate-btn');
+    const report3Status = document.getElementById('report3-status');
+    const report3Results = document.getElementById('report3-results');
+    const report3Tbody = document.getElementById('report3-tbody');
+
+    report3GenerateBtn.addEventListener('click', async () => {
+      report3GenerateBtn.disabled = true;
+      report3GenerateBtn.textContent = 'Loading...';
+      report3Status.hidden = true;
+      report3Results.hidden = true;
+
+      try {
+        const response = await fetch('/api/reports/users-active-loans');
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to generate report.');
+        }
+
+        report3Tbody.innerHTML = '';
+        if (data.users.length === 0) {
+          setReportStatus(report3Status, 'No users have active loans.', false);
+          return;
+        }
+
+        data.users.forEach(user => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${user.user_name}</td>
+            <td>${user.active_loans}</td>
+          `;
+          report3Tbody.appendChild(row);
+        });
+        report3Results.hidden = false;
+      } catch (error) {
+        setReportStatus(report3Status, error.message || 'Failed to generate report.', true);
+      } finally {
+        report3GenerateBtn.disabled = false;
+        report3GenerateBtn.textContent = 'Generate Report';
+      }
+    });
+
+    // Report 4: Books Lent Now
+    const report4GenerateBtn = document.getElementById('report4-generate-btn');
+    const report4Status = document.getElementById('report4-status');
+    const report4Results = document.getElementById('report4-results');
+    const report4Tbody = document.getElementById('report4-tbody');
+
+    report4GenerateBtn.addEventListener('click', async () => {
+      report4GenerateBtn.disabled = true;
+      report4GenerateBtn.textContent = 'Loading...';
+      report4Status.hidden = true;
+      report4Results.hidden = true;
+
+      try {
+        const response = await fetch('/api/reports/books-lent-now');
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to generate report.');
+        }
+
+        report4Tbody.innerHTML = '';
+        if (data.books.length === 0) {
+          setReportStatus(report4Status, 'No books are currently lent.', false);
+          return;
+        }
+
+        data.books.forEach(book => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${book.book_title}</td>
+            <td>${book.book_author || '-'}</td>
+            <td>${book.user_name}</td>
+            <td>${formatDate(book.loan_date)}</td>
+          `;
+          report4Tbody.appendChild(row);
+        });
+        report4Results.hidden = false;
+      } catch (error) {
+        setReportStatus(report4Status, error.message || 'Failed to generate report.', true);
+      } finally {
+        report4GenerateBtn.disabled = false;
+        report4GenerateBtn.textContent = 'Generate Report';
+      }
+    });
+
+    // Report 5: Users by Total Loans
+    const report5GenerateBtn = document.getElementById('report5-generate-btn');
+    const report5Status = document.getElementById('report5-status');
+    const report5Results = document.getElementById('report5-results');
+    const report5Tbody = document.getElementById('report5-tbody');
+
+    report5GenerateBtn.addEventListener('click', async () => {
+      report5GenerateBtn.disabled = true;
+      report5GenerateBtn.textContent = 'Loading...';
+      report5Status.hidden = true;
+      report5Results.hidden = true;
+
+      try {
+        const response = await fetch('/api/reports/users-total-loans');
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to generate report.');
+        }
+
+        report5Tbody.innerHTML = '';
+        if (data.users.length === 0) {
+          setReportStatus(report5Status, 'No users found.', false);
+          return;
+        }
+
+        data.users.forEach(user => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${user.user_name}</td>
+            <td>${user.total_loans}</td>
+          `;
+          report5Tbody.appendChild(row);
+        });
+        report5Results.hidden = false;
+      } catch (error) {
+        setReportStatus(report5Status, error.message || 'Failed to generate report.', true);
+      } finally {
+        report5GenerateBtn.disabled = false;
+        report5GenerateBtn.textContent = 'Generate Report';
+      }
+    });
+
+    // Report 6: Books by Total Loans
+    const report6GenerateBtn = document.getElementById('report6-generate-btn');
+    const report6Status = document.getElementById('report6-status');
+    const report6Results = document.getElementById('report6-results');
+    const report6Tbody = document.getElementById('report6-tbody');
+
+    report6GenerateBtn.addEventListener('click', async () => {
+      report6GenerateBtn.disabled = true;
+      report6GenerateBtn.textContent = 'Loading...';
+      report6Status.hidden = true;
+      report6Results.hidden = true;
+
+      try {
+        const response = await fetch('/api/reports/books-total-loans');
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to generate report.');
+        }
+
+        report6Tbody.innerHTML = '';
+        if (data.books.length === 0) {
+          setReportStatus(report6Status, 'No books found.', false);
+          return;
+        }
+
+        data.books.forEach(book => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${book.book_title}</td>
+            <td>${book.book_author || '-'}</td>
+            <td>${book.total_loans}</td>
+          `;
+          report6Tbody.appendChild(row);
+        });
+        report6Results.hidden = false;
+      } catch (error) {
+        setReportStatus(report6Status, error.message || 'Failed to generate report.', true);
+      } finally {
+        report6GenerateBtn.disabled = false;
+        report6GenerateBtn.textContent = 'Generate Report';
+      }
+    });
+  </script>
+</body>
+</html>

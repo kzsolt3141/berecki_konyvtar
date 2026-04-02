@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="card card-wide card-tall">
+    <h1>My Profile</h1>
+    <p class="card-subtitle">Update your account details.</p>
+
+    <%
+      const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23f2effa'/%3E%3Ccircle cx='60' cy='46' r='22' fill='%23c6b5e9'/%3E%3Cpath d='M24 102c6-19 22-30 36-30s30 11 36 30' fill='%23c6b5e9'/%3E%3C/svg%3E";
+    %>
+
+    <div class="avatar-preview-wrap">
+      <img
+        id="profile-preview"
+        class="avatar-preview avatar-clickable"
+        src="<%= user.image_path || defaultAvatar %>"
+        alt="Profile picture"
+        title="Click to change photo"
+      />
+    </div>
+    <p class="avatar-hint">Click photo to change</p>
+
+    <div id="profile-status" class="form-status" hidden></div>
+
+    <form id="profile-form" action="#" method="POST" enctype="multipart/form-data" class="form-detailed">
+      <input type="file" id="image" name="image" accept="image/*" class="file-input-hidden" tabindex="-1" />
+
+      <div class="field-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" name="name" value="<%= user.name %>" autocomplete="name" required />
+      </div>
+      <div class="field-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" value="<%= user.email %>" autocomplete="email" required />
+      </div>
+      <div class="field-group">
+        <label for="address">Address</label>
+        <input type="text" id="address" name="address" value="<%= user.address %>" autocomplete="street-address" required />
+      </div>
+      <div class="field-group">
+        <label for="phone">Phone</label>
+        <input type="tel" id="phone" name="phone" value="<%= user.phone %>" autocomplete="tel" required />
+      </div>
+      <div class="field-group">
+        <label for="occupancy">Occupation</label>
+        <input type="text" id="occupancy" name="occupancy" value="<%= user.occupancy %>" required />
+      </div>
+      <div class="field-group">
+        <label for="birth_date">Birth Date</label>
+        <input type="date" id="birth_date" name="birth_date" value="<%= user.birth_date %>" required />
+      </div>
+      <div class="field-group">
+        <label for="new_password">New Password <span class="field-optional">(leave blank to keep current)</span></label>
+        <input type="password" id="new_password" name="new_password" placeholder="new password" autocomplete="new-password" />
+      </div>
+      <div class="field-group">
+        <label for="confirm_new_password">Confirm New Password</label>
+        <input type="password" id="confirm_new_password" name="confirm_new_password" placeholder="confirm new password" autocomplete="new-password" />
+      </div>
+
+      <button id="profile-submit" type="submit" class="btn-primary">SAVE CHANGES</button>
+
+      <% if (!isOwnProfile) { %>
+      <div class="field-group admin-toggle-group">
+        <label class="admin-toggle-label">
+          <input
+            type="checkbox"
+            id="admin"
+            name="admin"
+            value="1"
+            class="admin-toggle-checkbox"
+            <%= user.admin ? 'checked' : '' %>
+          />
+          <span>Admin rights</span>
+        </label>
+      </div>
+      <% } %>
+    </form>
+
+    <!-- Notes section -->
+    <div class="notes-section">
+      <h2 class="notes-title">Notes</h2>
+
+      <ul class="notes-list" id="notes-list">
+        <% notes.forEach(note => { %>
+          <li class="note-item">
+            <span class="note-content"><%= note.content %></span>
+            <time class="note-date" datetime="<%= note.created_at %>">
+              <%= new Date(note.created_at).toLocaleString() %>
+            </time>
+          </li>
+        <% }) %>
+        <% if (notes.length === 0) { %>
+          <li class="note-item note-empty" id="note-empty">No notes yet.</li>
+        <% } %>
+      </ul>
+
+      <div id="note-status" class="form-status" hidden></div>
+
+      <% if (isOwnProfile || isAdmin) { %>
+      <div class="note-add-row">
+        <input type="text" id="note-input" class="note-input" placeholder="Add a note…" />
+        <button id="note-submit" type="button" class="btn-note">ADD</button>
+      </div>
+      <% } %>
+    </div>
+
+    <% if (isAdmin && !isOwnProfile) { %>
+    <div class="loan-history-section">
+      <h2 class="notes-title">Loan History</h2>
+
+      <% if ((loanHistory || []).length === 0) { %>
+        <p class="list-empty">No loans yet.</p>
+      <% } else { %>
+      <table class="loan-history-table">
+        <thead>
+          <tr>
+            <th>Book</th>
+            <th>Loan Date</th>
+            <th>Return Date</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% loanHistory.forEach(loan => { %>
+          <tr>
+            <td>
+              <% if (loan.book_id) { %>
+                <a href="/books/<%= loan.book_id %>/edit" class="user-loan-book-link"><%= loan.book_title || 'Unknown book' %></a>
+              <% } else { %>
+                <%= loan.book_title || 'Unknown book' %>
+              <% } %>
+            </td>
+            <td><%= new Date(loan.loan_date).toLocaleDateString() %></td>
+            <td><%= loan.return_date ? new Date(loan.return_date).toLocaleDateString() : 'Active' %></td>
+            <td><%= loan.notes || '–' %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      <% } %>
+    </div>
+    <% } %>
+
+    <a href="<%= backUrl %>" class="signup-link">Back</a>
+  </div>
+
+  <script>
+    const userId = <%= user.id %>;
+    const defaultAvatar = "<%= defaultAvatar %>";
+
+    const profileForm   = document.getElementById('profile-form');
+    const profileStatus = document.getElementById('profile-status');
+    const profileSubmit = document.getElementById('profile-submit');
+    const profilePreview = document.getElementById('profile-preview');
+    const imageInput    = document.getElementById('image');
+    let previewUrl;
+
+    // Click avatar → open file picker
+    profilePreview.addEventListener('click', () => imageInput.click());
+
+    imageInput.addEventListener('change', (event) => {
+      const [file] = event.target.files;
+      if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
+      profilePreview.src = file ? (previewUrl = URL.createObjectURL(file)) : defaultAvatar;
+    });
+
+    function setStatus(el, message, type) {
+      el.textContent = message;
+      el.className = `form-status ${type}`;
+      el.hidden = false;
+    }
+
+    // Save profile changes
+    profileForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      profileSubmit.disabled = true;
+      profileSubmit.textContent = 'SAVING…';
+      profileStatus.hidden = true;
+
+      try {
+        const response = await fetch(`/api/users/${userId}`, {
+          method: 'PUT',
+          body: new FormData(profileForm),
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.message || 'Could not save changes.');
+        setStatus(profileStatus, payload.message, 'success');
+      } catch (err) {
+        setStatus(profileStatus, err.message, 'error');
+      } finally {
+        profileSubmit.disabled = false;
+        profileSubmit.textContent = 'SAVE CHANGES';
+      }
+    });
+
+    // Add note
+    // Available when editing own profile or when admin is editing another user
+    <% if (isOwnProfile || isAdmin) { %>
+    const noteInput  = document.getElementById('note-input');
+    const noteSubmit = document.getElementById('note-submit');
+    const notesList  = document.getElementById('notes-list');
+    const noteStatus = document.getElementById('note-status');
+
+    noteSubmit.addEventListener('click', async () => {
+      const content = noteInput.value.trim();
+      if (!content) return;
+
+      noteSubmit.disabled = true;
+      noteStatus.hidden = true;
+
+      try {
+        const response = await fetch(`/api/users/${userId}/notes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content }),
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.message || 'Could not add note.');
+
+        const note = payload.note;
+
+        // Remove "no notes" placeholder if present
+        const emptyEl = document.getElementById('note-empty');
+        if (emptyEl) emptyEl.remove();
+
+        const li = document.createElement('li');
+        li.className = 'note-item';
+        li.innerHTML = `<span class="note-content">${note.content}</span><time class="note-date">${new Date(note.created_at).toLocaleString()}</time>`;
+        notesList.appendChild(li);
+
+        noteInput.value = '';
+      } catch (err) {
+        setStatus(noteStatus, err.message, 'error');
+      } finally {
+        noteSubmit.disabled = false;
+      }
+    });
+
+    // Allow Enter key in note input
+    noteInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); noteSubmit.click(); }
+    });
+    <% } %>
+  </script>
+</body>
+</html>

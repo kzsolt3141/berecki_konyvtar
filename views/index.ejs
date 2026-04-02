@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="card">
+    <h1>Sign In</h1>
+    <p class="card-subtitle">Welcome back. Sign in to continue.</p>
+    <div id="login-status" class="form-status" hidden></div>
+    <form id="login-form" action="#" method="POST">
+      <input type="email" id="login-email" name="email" placeholder="email" autocomplete="email" required />
+      <input type="password" id="login-password" name="password" placeholder="password" autocomplete="current-password" required />
+      <button id="login-submit" type="submit" class="btn-primary">SIGN IN</button>
+    </form>
+    <a href="/signup" class="signup-link">Sign Up</a>
+  </div>
+
+  <script>
+    const loginForm = document.getElementById('login-form');
+    const loginStatus = document.getElementById('login-status');
+    const loginSubmit = document.getElementById('login-submit');
+
+    loginForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      loginSubmit.disabled = true;
+      loginSubmit.textContent = 'SIGNING IN...';
+      loginStatus.hidden = true;
+
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: document.getElementById('login-email').value,
+            password: document.getElementById('login-password').value,
+          }),
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload.message || 'Login failed.');
+        }
+
+        window.location.href = '/home';
+      } catch (error) {
+        loginStatus.textContent = error.message;
+        loginStatus.className = 'form-status error';
+        loginStatus.hidden = false;
+      } finally {
+        loginSubmit.disabled = false;
+        loginSubmit.textContent = 'SIGN IN';
+      }
+    });
+  </script>
+</body>
+</html>

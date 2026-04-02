@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Books</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="page-list">
+  <header class="list-header">
+    <a href="/home" class="list-back">&#8592; Home</a>
+    <h1 class="list-title">All Books</h1>
+  </header>
+
+  <main class="list-main">
+    <form class="books-search-form" method="GET" action="/books">
+      <input
+        type="search"
+        name="q"
+        class="books-search-input"
+        placeholder="Search title, author, ISBN, genre…"
+        value="<%= q %>"
+        autocomplete="off"
+      />
+      <button type="submit" class="books-search-btn">Search</button>
+      <% if (q) { %>
+        <a href="/books" class="books-search-clear">Clear</a>
+      <% } %>
+    </form>
+
+    <% if (books.length === 0) { %>
+      <p class="list-empty"><%= q ? `No results for "${q}".` : 'No books registered yet.' %></p>
+    <% } else { %>
+      <div class="list-grid">
+        <% books.forEach(book => { %>
+          <% if (isAdmin) { %>
+            <a href="/books/<%= book.id %>/edit" class="list-card list-card-book list-card-link">
+          <% } else { %>
+            <div class="list-card list-card-book">
+          <% } %>
+            <img
+              class="list-book-cover"
+              src="<%= book.image_path || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 200'%3E%3Crect width='320' height='200' fill='%23f2effa'/%3E%3Crect x='92' y='34' width='136' height='132' rx='8' fill='%23c6b5e9'/%3E%3Cline x1='104' y1='64' x2='216' y2='64' stroke='%23f2effa' stroke-width='8'/%3E%3Cline x1='104' y1='88' x2='216' y2='88' stroke='%23f2effa' stroke-width='8'/%3E%3Cline x1='104' y1='112' x2='178' y2='112' stroke='%23f2effa' stroke-width='8'/%3E%3C/svg%3E" %>"
+              alt="<%= book.title %>"
+            />
+            <div class="list-card-body">
+              <h2 class="list-card-name"><%= book.title %></h2>
+              <p class="list-card-detail"><strong>Author:</strong> <%= book.author %></p>
+              <p class="list-card-detail"><strong>ISBN:</strong> <%= book.isbn %></p>
+              <% if (book.year)  { %><p class="list-card-detail"><strong>Year:</strong> <%= book.year %></p><% } %>
+              <% if (book.genre) { %><p class="list-card-detail"><strong>Genre:</strong> <%= book.genre %></p><% } %>
+              <% if (book.publ)  { %><p class="list-card-detail"><strong>Publisher:</strong> <%= book.publ %></p><% } %>
+              <% if (book.price) { %><p class="list-card-detail"><strong>Price:</strong> <%= book.price %></p><% } %>
+            </div>
+          <% if (isAdmin) { %>
+            </a>
+          <% } else { %>
+            </div>
+          <% } %>
+        <% }) %>
+      </div>
+
+      <% if (totalPages > 1) { %>
+        <nav class="books-pagination">
+          <% if (page > 1) { %>
+            <a class="page-btn" href="/books?q=<%= encodeURIComponent(q) %>&page=<%= page - 1 %>">&#8592; Prev</a>
+          <% } else { %>
+            <span class="page-btn page-btn-disabled">&#8592; Prev</span>
+          <% } %>
+
+          <span class="page-info">Page <%= page %> of <%= totalPages %></span>
+
+          <% if (page < totalPages) { %>
+            <a class="page-btn" href="/books?q=<%= encodeURIComponent(q) %>&page=<%= page + 1 %>">Next &#8594;</a>
+          <% } else { %>
+            <span class="page-btn page-btn-disabled">Next &#8594;</span>
+          <% } %>
+        </nav>
+      <% } %>
+    <% } %>
+  </main>
+</body>
+</html>
