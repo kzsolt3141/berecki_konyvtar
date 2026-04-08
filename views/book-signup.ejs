@@ -233,7 +233,7 @@
         setStatus(error.message, 'error');
       } finally {
         bookSubmit.disabled = false;
-        bookSubmit.textContent = <%= JSON.stringify(submitLabel) %>;
+        bookSubmit.textContent = <%- JSON.stringify(submitLabel) %>;
       }
     });
   </script>
