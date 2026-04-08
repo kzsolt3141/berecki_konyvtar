@@ -42,3 +42,5 @@ data/*.db-*
 # Uploaded files
 public/uploads/
 uploads/
+
+activity.txt
