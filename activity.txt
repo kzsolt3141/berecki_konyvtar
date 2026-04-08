@@ -1,0 +1,1 @@
+[2026-04-08T19:23:47.333Z] GET / - User: anonymous - IP: ::1 - Location: unknown
