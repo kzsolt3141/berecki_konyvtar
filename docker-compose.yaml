@@ -1,0 +1,12 @@
+version: "3.9"
+
+services:
+  node-app:
+    image: node:24-slim
+    container_name: node_app
+    working_dir: /app
+    volumes:
+      - /home/home/docker/node/berecki_konyvtar:/app
+    ports:
+      - "3000:3000"
+    command: sh -c "npm install && node entrypoint.js"
