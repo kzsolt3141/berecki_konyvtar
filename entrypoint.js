@@ -10,6 +10,8 @@ const bookApiRouter = require('./routes/api/books');
 const loanApiRouter = require('./routes/api/loans');
 const reportApiRouter = require('./routes/api/reports');
 const backupApiRouter = require('./routes/api/backup');
+const workingApiRouter = require('./routes/api/working');
+const announcementsApiRouter = require('./routes/api/announcements');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -112,6 +114,8 @@ app.use('/api/books', bookApiRouter);
 app.use('/api/loans', loanApiRouter);
 app.use('/api/reports', reportApiRouter);
 app.use('/api/backup', backupApiRouter);
+app.use('/api/working', workingApiRouter);
+app.use('/api/announcements', announcementsApiRouter);
 
 // Global error handler — returns JSON for API routes
 app.use((err, req, res, _next) => {

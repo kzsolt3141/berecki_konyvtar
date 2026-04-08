@@ -11,6 +11,10 @@
     <div class="home-user">
       <span class="home-user-name"><%= name %></span>
       <a class="home-action-link home-action-link-header" href="/home">Home</a>
+      <% if (isAdmin) { %>
+      <button type="button" id="edit-hours-btn" class="home-action-link home-action-link-header">Edit Hours</button>
+      <button type="button" id="edit-announcements-btn" class="home-action-link home-action-link-header">Edit Announcements</button>
+      <% } %>
       <a class="home-action-link home-action-link-header" href="/reports">Reports</a>
       <% if (isAdmin) { %>
       <button type="button" id="backup-btn" class="home-action-link home-action-link-header">Backup</button>
@@ -611,7 +615,348 @@
         closeLendReceipt();
       }
     });
+
     <% } %>
   </script>
-</body>
-</html>
+
+  <!-- Working Hours Edit Modal -->
+  <div id="hours-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close" id="close-hours">&times;</span>
+      <h2>Edit Working Hours</h2>
+      <form id="hours-form">
+        <div class="day-input">
+          <label>Monday:</label>
+          <input type="time" id="mon-open">
+          <span>to</span>
+          <input type="time" id="mon-close">
+        </div>
+        <div class="day-input">
+          <label>Tuesday:</label>
+          <input type="time" id="tue-open">
+          <span>to</span>
+          <input type="time" id="tue-close">
+        </div>
+        <div class="day-input">
+          <label>Wednesday:</label>
+          <input type="time" id="wed-open">
+          <span>to</span>
+          <input type="time" id="wed-close">
+        </div>
+        <div class="day-input">
+          <label>Thursday:</label>
+          <input type="time" id="thu-open">
+          <span>to</span>
+          <input type="time" id="thu-close">
+        </div>
+        <div class="day-input">
+          <label>Friday:</label>
+          <input type="time" id="fri-open">
+          <span>to</span>
+          <input type="time" id="fri-close">
+        </div>
+        <div class="day-input">
+          <label>Saturday:</label>
+          <input type="time" id="sat-open">
+          <span>to</span>
+          <input type="time" id="sat-close">
+        </div>
+        <div class="day-input">
+          <label>Sunday:</label>
+          <input type="time" id="sun-open">
+          <span>to</span>
+          <input type="time" id="sun-close">
+        </div>
+        <button type="submit" class="btn-primary">Save Hours</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Announcements Edit Modal -->
+  <div id="announcements-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close" id="close-announcements">&times;</span>
+      <h2>Manage Announcements</h2>
+      
+      <div id="announcements-list-container" style="display: none;">
+        <h3>Existing Announcements</h3>
+        <ul id="announcements-list" style="list-style: none; padding: 0; margin-bottom: 20px;"></ul>
+        <button type="button" id="add-new-announcement-btn" class="btn-secondary" style="margin-bottom: 20px;">+ Add New Announcement</button>
+      </div>
+
+      <div id="announcement-form-container">
+        <form id="announcements-form">
+          <input type="text" id="announcement-title" placeholder="Title" required>
+          <textarea id="announcement-content" placeholder="Content" required></textarea>
+          <input type="hidden" id="announcement-id">
+          <div style="display: flex; gap: 10px;">
+            <button type="submit" class="btn-primary" id="announcement-submit-btn">Add Announcement</button>
+            <button type="button" id="cancel-announcement-btn" class="btn-secondary" style="display: none;">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Admin modals - Initialize after DOM loads
+    document.addEventListener('DOMContentLoaded', () => {
+      const hoursModal = document.getElementById('hours-modal');
+      const announcementsModal = document.getElementById('announcements-modal');
+      const editHoursBtn = document.getElementById('edit-hours-btn');
+      const editAnnouncementsBtn = document.getElementById('edit-announcements-btn');
+      const closeHours = document.getElementById('close-hours');
+      const closeAnnouncements = document.getElementById('close-announcements');
+      const hoursForm = document.getElementById('hours-form');
+      const announcementsForm = document.getElementById('announcements-form');
+
+      if (editHoursBtn && hoursModal) {
+        editHoursBtn.addEventListener('click', () => {
+          hoursModal.style.display = 'flex';
+          // Load current hours into form
+          fetch('/api/working')
+            .then(res => res.json())
+            .then(hours => {
+              const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+              days.forEach((day, index) => {
+                const hour = hours.find(h => h.day_of_week === day);
+                const prefix = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'][index];
+                if (hour && !hour.is_closed) {
+                  document.getElementById(`${prefix}-open`).value = hour.open_time || '';
+                  document.getElementById(`${prefix}-close`).value = hour.close_time || '';
+                }
+              });
+            })
+            .catch(error => console.error('Failed to load hours:', error));
+        });
+      }
+
+      if (editAnnouncementsBtn && announcementsModal) {
+        editAnnouncementsBtn.addEventListener('click', async () => {
+          announcementsModal.style.display = 'flex';
+          resetAnnouncementForm();
+          await loadAnnouncements();
+        });
+      }
+
+      if (closeHours && hoursModal) {
+        closeHours.addEventListener('click', () => hoursModal.style.display = 'none');
+      }
+      if (closeAnnouncements && announcementsModal) {
+        closeAnnouncements.addEventListener('click', () => announcementsModal.style.display = 'none');
+      }
+
+      const addNewAnnouncementBtn = document.getElementById('add-new-announcement-btn');
+      if (addNewAnnouncementBtn) {
+        addNewAnnouncementBtn.addEventListener('click', () => {
+          resetAnnouncementForm();
+          document.getElementById('announcements-list-container').style.display = 'none';
+          document.getElementById('announcement-form-container').style.display = 'block';
+        });
+      }
+
+      window.addEventListener('click', (event) => {
+        if (hoursModal && event.target === hoursModal) hoursModal.style.display = 'none';
+        if (announcementsModal && event.target === announcementsModal) announcementsModal.style.display = 'none';
+      });
+
+      // Form submissions
+      if (hoursForm) {
+        hoursForm.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const hours = [];
+          const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+          const prefixes = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+          days.forEach((day, index) => {
+            const prefix = prefixes[index];
+            const openTime = document.getElementById(`${prefix}-open`).value;
+            const closeTime = document.getElementById(`${prefix}-close`).value;
+            const isClosed = !openTime || !closeTime;
+            hours.push({
+              day_of_week: day,
+              open_time: openTime || null,
+              close_time: closeTime || null,
+              is_closed: isClosed ? 1 : 0
+            });
+          });
+
+          try {
+            const res = await fetch('/api/working', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ hours })
+            });
+
+            if (res.ok) {
+              hoursModal.style.display = 'none';
+              alert('Working hours updated successfully!');
+            } else {
+              alert('Failed to update hours');
+            }
+          } catch (error) {
+            alert('Error updating hours');
+          }
+        });
+      }
+
+      if (announcementsForm) {
+        announcementsForm.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const announcementId = document.getElementById('announcement-id').value;
+          const title = document.getElementById('announcement-title').value;
+          const content = document.getElementById('announcement-content').value;
+
+          try {
+            const url = announcementId ? `/api/announcements/${announcementId}` : '/api/announcements';
+            const method = announcementId ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+              method: method,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ title, content })
+            });
+
+            if (res.ok) {
+              announcementsModal.style.display = 'none';
+              resetAnnouncementForm();
+              alert(announcementId ? 'Announcement updated successfully!' : 'Announcement added successfully!');
+              await loadAnnouncements();
+            } else {
+              alert('Failed to save announcement');
+            }
+          } catch (error) {
+            alert('Error saving announcement');
+          }
+        });
+      }
+
+      const cancelAnnouncementBtn = document.getElementById('cancel-announcement-btn');
+      if (cancelAnnouncementBtn) {
+        cancelAnnouncementBtn.addEventListener('click', () => {
+          resetAnnouncementForm();
+          showAnnouncementsList();
+        });
+      }
+    });
+
+    // Helper functions for announcement management
+    async function loadAnnouncements() {
+      try {
+        const res = await fetch('/api/announcements?all=true');
+        const announcements = await res.json();
+        
+        const announcementsList = document.getElementById('announcements-list');
+        announcementsList.innerHTML = '';
+
+        if (announcements.length === 0) {
+          const li = document.createElement('li');
+          li.textContent = 'No announcements yet';
+          li.style.color = '#999';
+          announcementsList.appendChild(li);
+        } else {
+          announcements.forEach(ann => {
+            const li = document.createElement('li');
+            li.style.padding = '10px';
+            li.style.borderBottom = '1px solid #ddd';
+            li.style.cursor = 'pointer';
+            li.style.backgroundColor = '#f9f9f9';
+            li.style.marginBottom = '5px';
+            li.textContent = ann.title;
+            li.addEventListener('hover', function() {
+              this.style.backgroundColor = '#f0f0f0';
+            });
+            li.addEventListener('click', () => {
+              editAnnouncement(ann);
+              const container = document.getElementById('announcements-list-container');
+              container.style.display = 'none';
+              document.getElementById('announcement-form-container').style.display = 'block';
+            });
+            announcementsList.appendChild(li);
+          });
+        }
+
+        document.getElementById('announcements-list-container').style.display = 'block';
+        document.getElementById('announcement-form-container').style.display = 'none';
+      } catch (error) {
+        console.error('Failed to load announcements:', error);
+      }
+    }
+
+    function editAnnouncement(announcement) {
+      document.getElementById('announcement-id').value = announcement.id;
+      document.getElementById('announcement-title').value = announcement.title;
+      document.getElementById('announcement-content').value = announcement.content;
+      
+      const submitBtn = document.getElementById('announcement-submit-btn');
+      submitBtn.textContent = 'Update Announcement';
+      submitBtn.style.backgroundColor = '#17a2b8';
+      
+      const cancelBtn = document.getElementById('cancel-announcement-btn');
+      cancelBtn.style.display = 'inline-block';
+
+      const deleteBtn = document.getElementById('delete-announcement-btn') || createDeleteButton();
+      deleteBtn.style.display = 'inline-block';
+    }
+
+    function resetAnnouncementForm() {
+      document.getElementById('announcement-id').value = '';
+      document.getElementById('announcement-title').value = '';
+      document.getElementById('announcement-content').value = '';
+      
+      const submitBtn = document.getElementById('announcement-submit-btn');
+      submitBtn.textContent = 'Add Announcement';
+      submitBtn.style.backgroundColor = '';
+      
+      const cancelBtn = document.getElementById('cancel-announcement-btn');
+      cancelBtn.style.display = 'none';
+
+      const deleteBtn = document.getElementById('delete-announcement-btn');
+      if (deleteBtn) {
+        deleteBtn.style.display = 'none';
+      }
+    }
+
+    function showAnnouncementsList() {
+      document.getElementById('announcements-list-container').style.display = 'block';
+      document.getElementById('announcement-form-container').style.display = 'none';
+    }
+
+    function createDeleteButton() {
+      const buttons = document.querySelector('#announcements-form > div');
+      const deleteBtn = document.createElement('button');
+      deleteBtn.id = 'delete-announcement-btn';
+      deleteBtn.type = 'button';
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.className = 'btn-danger';
+      deleteBtn.style.display = 'none';
+      deleteBtn.style.marginLeft = 'auto';
+      
+      deleteBtn.addEventListener('click', async () => {
+        const announcementId = document.getElementById('announcement-id').value;
+        if (!announcementId) return;
+
+        if (!confirm('Are you sure you want to delete this announcement?')) return;
+
+        try {
+          const res = await fetch(`/api/announcements/${announcementId}`, {
+            method: 'DELETE'
+          });
+
+          if (res.ok) {
+            document.getElementById('announcements-modal').style.display = 'none';
+            resetAnnouncementForm();
+            alert('Announcement deleted successfully!');
+          } else {
+            alert('Failed to delete announcement');
+          }
+        } catch (error) {
+          alert('Error deleting announcement');
+        }
+      });
+
+      buttons.appendChild(deleteBtn);
+      return deleteBtn;
+    }
+  </script>
+

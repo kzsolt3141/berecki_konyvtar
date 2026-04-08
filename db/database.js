@@ -101,6 +101,28 @@ async function initDatabase() {
     )`
   );
 
+  await run(
+    `CREATE TABLE IF NOT EXISTS working_hours (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      day_of_week TEXT NOT NULL,
+      open_time TEXT,
+      close_time TEXT,
+      is_closed INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL
+    )`
+  );
+
+  await run(
+    `CREATE TABLE IF NOT EXISTS announcements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )`
+  );
+
   // Backward-compatible migration for loan notes column.
   const loanColumns = await all('PRAGMA table_info(loans)');
   const hasLoanNotesColumn = loanColumns.some((column) => column.name === 'notes');
@@ -123,6 +145,21 @@ async function initDatabase() {
         [u.id, u.notes, new Date().toISOString()]
       );
     }
+  }
+
+  // Initialize with default announcements if none exist
+  try {
+    const existingAnnouncements = await all('SELECT id FROM announcements LIMIT 1');
+    if (!existingAnnouncements || existingAnnouncements.length === 0) {
+      const now = new Date().toISOString();
+      await run(
+        'INSERT INTO announcements (title, content, is_active, created_at, updated_at) VALUES (?, ?, 1, ?, ?)',
+        ['Welcome to Berecki Library', 'Welcome to our municipal library. We are open Monday-Friday 9:00-17:00, Saturday 10:00-14:00, and closed on Sundays.', now, now]
+      );
+      console.log('✓ Default announcement created');
+    }
+  } catch (error) {
+    console.error('Error initializing announcements:', error);
   }
 }
 

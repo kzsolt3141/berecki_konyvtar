@@ -3,152 +3,232 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In</title>
+  <title>Községi könyvtár - Bereck</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <div class="card">
-    <h1>Sign In</h1>
-    <p class="card-subtitle">Welcome back. Sign in to continue.</p>
-    <div id="login-status" class="form-status" hidden></div>
-    <form id="login-form" action="#" method="POST">
-      <input type="email" id="login-email" name="email" placeholder="email" autocomplete="email" required />
-      <input type="password" id="login-password" name="password" placeholder="password" autocomplete="current-password" required />
-      <div id="captcha-container">
-        <div id="captcha-row">
-          <div id="captcha-display"></div>
-          <button type="button" id="regenerate-captcha" title="Regenerate">↻</button>
-        </div>
-        <input type="text" id="captcha-input" placeholder="Enter captcha" />
-        <button type="button" id="verify-captcha">Verify</button>
+  <div class="page-container">
+    <div class="left-panel">
+      <h2>Working Hours</h2>
+      <div class="hours-content">
+        <p><strong>Monday - Friday:</strong> 9:00 AM - 5:00 PM</p>
+        <p><strong>Saturday:</strong> 10:00 AM - 2:00 PM</p>
+        <p><strong>Sunday:</strong> Closed</p>
       </div>
-      <button id="login-submit" type="submit" class="btn-primary" disabled>SIGN IN</button>
-    </form>
-    <a href="/signup" id="signup-link" class="signup-link disabled">Sign Up</a>
+    </div>
+    <div class="center-panel">
+      <div class="card">
+        <h1>Sign In</h1>
+        <p class="card-subtitle">Welcome back. Sign in to continue.</p>
+        <div id="login-status" class="form-status" hidden></div>
+        <form id="login-form" action="#" method="POST">
+          <input type="email" id="login-email" name="email" placeholder="email" autocomplete="email" required />
+          <input type="password" id="login-password" name="password" placeholder="password" autocomplete="current-password" required />
+          <div id="captcha-container">
+            <div id="captcha-row">
+              <div id="captcha-display"></div>
+              <button type="button" id="regenerate-captcha" title="Regenerate">↻</button>
+            </div>
+            <input type="text" id="captcha-input" placeholder="Enter captcha" />
+            <button type="button" id="verify-captcha">Verify</button>
+          </div>
+          <button id="login-submit" type="submit" class="btn-primary" disabled>SIGN IN</button>
+        </form>
+        <a href="/signup" id="signup-link" class="signup-link disabled">Sign Up</a>
+      </div>
+    </div>
+    <div class="right-panel">
+      <h2>Announcements</h2>
+      <div class="announcement-content" id="announcements-list">
+        <p>Loading...</p>
+      </div>
+    </div>
   </div>
 
   <script>
-    const loginForm = document.getElementById('login-form');
-    const loginStatus = document.getElementById('login-status');
-    const loginSubmit = document.getElementById('login-submit');
-    const signupLink = document.getElementById('signup-link');
-    const captchaDisplay = document.getElementById('captcha-display');
-    const captchaInput = document.getElementById('captcha-input');
-    const verifyCaptcha = document.getElementById('verify-captcha');
-    const regenerateCaptcha = document.getElementById('regenerate-captcha');
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      const loginForm = document.getElementById('login-form');
+      const loginStatus = document.getElementById('login-status');
+      const loginSubmit = document.getElementById('login-submit');
+      const signupLink = document.getElementById('signup-link');
+      const captchaDisplay = document.getElementById('captcha-display');
+      const captchaInput = document.getElementById('captcha-input');
+      const verifyCaptcha = document.getElementById('verify-captcha');
+      const regenerateCaptcha = document.getElementById('regenerate-captcha');
 
-    let currentCaptcha = '';
-    let captchaVerified = false;
+      let currentCaptcha = '';
+      let captchaVerified = false;
 
-    function generateCaptcha() {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-      currentCaptcha = '';
-      let html = '';
+      function generateCaptcha() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        currentCaptcha = '';
+        let html = '';
 
-      // Generate noise dots (25 dots, ~15% density)
-      for (let i = 0; i < 25; i++) {
-        const x = Math.random() * 100;
-        const y = Math.random() * 100;
-        const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        html += `<div class="captcha-dot" style="left: ${x}%; top: ${y}%; background-color: ${color};"></div>`;
-      }
-
-      // Generate 6 colored lines with random slopes
-      for (let i = 0; i < 6; i++) {
-        const x = Math.random() * 80; // 0-80% to keep within bounds
-        const y = Math.random() * 80;
-        const length = 20 + Math.random() * 40; // 20-60%
-        const angle = Math.random() * 360; // 0-360 degrees
-        const colors = ['#ff4444', '#44ff44', '#4444ff', '#ffaa44', '#aa44ff', '#44ffaa'];
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        html += `<div class="captcha-line" style="left: ${x}%; top: ${y}%; width: ${length}%; background-color: ${color}; transform: rotate(${angle}deg);"></div>`;
-      }
-
-      // Generate characters with random rotation
-      for (let i = 0; i < 6; i++) {
-        const char = chars.charAt(Math.floor(Math.random() * chars.length));
-        currentCaptcha += char;
-        const angle = Math.random() * 60 - 30; // Random rotation between -30 and 30 degrees
-        html += `<span class="captcha-char" style="transform: rotate(${angle}deg);">${char}</span>`;
-      }
-
-      captchaDisplay.innerHTML = html;
-      captchaInput.value = '';
-      captchaVerified = false;
-      loginSubmit.disabled = true;
-      signupLink.classList.add('disabled');
-    }
-
-    function verifyCaptchaFunc() {
-      if (captchaInput.value === currentCaptcha) {
-        captchaVerified = true;
-        loginSubmit.disabled = false;
-        signupLink.classList.remove('disabled');
-        loginStatus.textContent = 'Captcha verified!';
-        loginStatus.className = 'form-status success';
-        loginStatus.hidden = false;
-      } else {
-        loginStatus.textContent = 'Captcha incorrect. Try again.';
-        loginStatus.className = 'form-status error';
-        loginStatus.hidden = false;
-      }
-    }
-
-    signupLink.addEventListener('click', (event) => {
-      if (!captchaVerified) {
-        event.preventDefault();
-        loginStatus.textContent = 'Please verify the captcha first.';
-        loginStatus.className = 'form-status error';
-        loginStatus.hidden = false;
-      }
-    });
-
-    verifyCaptcha.addEventListener('click', verifyCaptchaFunc);
-    regenerateCaptcha.addEventListener('click', generateCaptcha);
-
-    // Generate initial captcha
-    generateCaptcha();
-
-    loginForm.addEventListener('submit', async (event) => {
-      event.preventDefault();
-
-      if (!captchaVerified) {
-        loginStatus.textContent = 'Please verify the captcha first.';
-        loginStatus.className = 'form-status error';
-        loginStatus.hidden = false;
-        return;
-      }
-
-      loginSubmit.disabled = true;
-      loginSubmit.textContent = 'SIGNING IN...';
-      loginStatus.hidden = true;
-
-      try {
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: document.getElementById('login-email').value,
-            password: document.getElementById('login-password').value,
-          }),
-        });
-
-        const payload = await response.json();
-
-        if (!response.ok) {
-          throw new Error(payload.message || 'Login failed.');
+        // Generate noise dots (25 dots, ~15% density)
+        for (let i = 0; i < 25; i++) {
+          const x = Math.random() * 100;
+          const y = Math.random() * 100;
+          const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+          const color = colors[Math.floor(Math.random() * colors.length)];
+          html += `<div class="captcha-dot" style="left: ${x}%; top: ${y}%; background-color: ${color};"></div>`;
         }
 
-        window.location.href = '/home';
-      } catch (error) {
-        loginStatus.textContent = error.message;
-        loginStatus.className = 'form-status error';
-        loginStatus.hidden = false;
-      } finally {
-        loginSubmit.disabled = false;
-        loginSubmit.textContent = 'SIGN IN';
+        // Generate 6 colored lines with random slopes
+        for (let i = 0; i < 6; i++) {
+          const x = Math.random() * 80; // 0-80% to keep within bounds
+          const y = Math.random() * 80;
+          const length = 20 + Math.random() * 40; // 20-60%
+          const angle = Math.random() * 360; // 0-360 degrees
+          const colors = ['#ff4444', '#44ff44', '#4444ff', '#ffaa44', '#aa44ff', '#44ffaa'];
+          const color = colors[Math.floor(Math.random() * colors.length)];
+          html += `<div class="captcha-line" style="left: ${x}%; top: ${y}%; width: ${length}%; background-color: ${color}; transform: rotate(${angle}deg);"></div>`;
+        }
+
+        // Generate characters with random rotation
+        for (let i = 0; i < 6; i++) {
+          const char = chars.charAt(Math.floor(Math.random() * chars.length));
+          currentCaptcha += char;
+          const angle = Math.random() * 40 - 20; // Random rotation between -20 and 20 degrees
+          html += `<span class="captcha-char" style="transform: rotate(${angle}deg);">${char}</span>`;
+        }
+
+        captchaDisplay.innerHTML = html;
+        captchaInput.value = '';
+        captchaVerified = false;
+        loginSubmit.disabled = true;
+        signupLink.classList.add('disabled');
       }
+
+      function verifyCaptchaFunc() {
+        if (captchaInput.value === currentCaptcha) {
+          captchaVerified = true;
+          loginSubmit.disabled = false;
+          signupLink.classList.remove('disabled');
+          loginStatus.textContent = 'Captcha verified!';
+          loginStatus.className = 'form-status success';
+          loginStatus.hidden = false;
+        } else {
+          loginStatus.textContent = 'Captcha incorrect. Try again.';
+          loginStatus.className = 'form-status error';
+          loginStatus.hidden = false;
+        }
+      }
+
+      signupLink.addEventListener('click', (event) => {
+        if (!captchaVerified) {
+          event.preventDefault();
+          loginStatus.textContent = 'Please verify the captcha first.';
+          loginStatus.className = 'form-status error';
+          loginStatus.hidden = false;
+        }
+      });
+
+      verifyCaptcha.addEventListener('click', verifyCaptchaFunc);
+      regenerateCaptcha.addEventListener('click', generateCaptcha);
+
+      // Load working hours and announcements
+      async function loadData() {
+        try {
+          const [hoursRes, announcementsRes] = await Promise.all([
+            fetch('/api/working'),
+            fetch('/api/announcements')
+          ]);
+
+          if (hoursRes.ok) {
+            const hours = await hoursRes.json();
+            displayWorkingHours(hours);
+          }
+
+          if (announcementsRes.ok) {
+            const announcements = await announcementsRes.json();
+            displayAnnouncements(announcements);
+          }
+        } catch (error) {
+          console.error('Failed to load data:', error);
+        }
+      }
+
+      function displayWorkingHours(hours) {
+        const hoursContent = document.querySelector('.hours-content');
+        if (hours.length === 0) {
+          hoursContent.innerHTML = '<p>Hours not set.</p>';
+          return;
+        }
+
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        hoursContent.innerHTML = days.map(day => {
+          const hour = hours.find(h => h.day_of_week === day);
+          if (!hour) return `<p><strong>${day}:</strong> Not set</p>`;
+          if (hour.is_closed) return `<p><strong>${day}:</strong> Closed</p>`;
+          return `<p><strong>${day}:</strong> ${hour.open_time} - ${hour.close_time}</p>`;
+        }).join('');
+      }
+
+      function displayAnnouncements(announcements) {
+        const announcementsList = document.getElementById('announcements-list');
+        if (announcements.length === 0) {
+          announcementsList.innerHTML = '<p>No current announcements.</p>';
+          return;
+        }
+
+        announcementsList.innerHTML = announcements.map(ann => `
+          <div class="announcement-item">
+            <h3>${ann.title}</h3>
+            <p>${ann.content}</p>
+          </div>
+        `).join('');
+      }
+
+      // Check if user is admin (this is a simple check, in real app use session)
+      async function checkAdmin() {
+        // Not needed on sign-in page
+      }
+
+      loadData();
+      checkAdmin();
+      generateCaptcha();
+
+      loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        if (!captchaVerified) {
+          loginStatus.textContent = 'Please verify the captcha first.';
+          loginStatus.className = 'form-status error';
+          loginStatus.hidden = false;
+          return;
+        }
+
+        loginSubmit.disabled = true;
+        loginSubmit.textContent = 'SIGNING IN...';
+        loginStatus.hidden = true;
+
+        try {
+          const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: document.getElementById('login-email').value,
+              password: document.getElementById('login-password').value,
+            }),
+          });
+
+          const payload = await response.json();
+
+          if (!response.ok) {
+            throw new Error(payload.message || 'Login failed.');
+          }
+
+          window.location.href = '/home';
+        } catch (error) {
+          loginStatus.textContent = error.message;
+          loginStatus.className = 'form-status error';
+          loginStatus.hidden = false;
+        } finally {
+          loginSubmit.disabled = false;
+          loginSubmit.textContent = 'SIGN IN';
+        }
+      });
     });
   </script>
 </body>
