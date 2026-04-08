@@ -14,18 +14,111 @@
     <form id="login-form" action="#" method="POST">
       <input type="email" id="login-email" name="email" placeholder="email" autocomplete="email" required />
       <input type="password" id="login-password" name="password" placeholder="password" autocomplete="current-password" required />
-      <button id="login-submit" type="submit" class="btn-primary">SIGN IN</button>
+      <div id="captcha-container">
+        <div id="captcha-row">
+          <div id="captcha-display"></div>
+          <button type="button" id="regenerate-captcha" title="Regenerate">↻</button>
+        </div>
+        <input type="text" id="captcha-input" placeholder="Enter captcha" />
+        <button type="button" id="verify-captcha">Verify</button>
+      </div>
+      <button id="login-submit" type="submit" class="btn-primary" disabled>SIGN IN</button>
     </form>
-    <a href="/signup" class="signup-link">Sign Up</a>
+    <a href="/signup" id="signup-link" class="signup-link disabled">Sign Up</a>
   </div>
 
   <script>
     const loginForm = document.getElementById('login-form');
     const loginStatus = document.getElementById('login-status');
     const loginSubmit = document.getElementById('login-submit');
+    const signupLink = document.getElementById('signup-link');
+    const captchaDisplay = document.getElementById('captcha-display');
+    const captchaInput = document.getElementById('captcha-input');
+    const verifyCaptcha = document.getElementById('verify-captcha');
+    const regenerateCaptcha = document.getElementById('regenerate-captcha');
+
+    let currentCaptcha = '';
+    let captchaVerified = false;
+
+    function generateCaptcha() {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      currentCaptcha = '';
+      let html = '';
+
+      // Generate noise dots (25 dots, ~15% density)
+      for (let i = 0; i < 25; i++) {
+        const x = Math.random() * 100;
+        const y = Math.random() * 100;
+        const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        html += `<div class="captcha-dot" style="left: ${x}%; top: ${y}%; background-color: ${color};"></div>`;
+      }
+
+      // Generate 6 colored lines with random slopes
+      for (let i = 0; i < 6; i++) {
+        const x = Math.random() * 80; // 0-80% to keep within bounds
+        const y = Math.random() * 80;
+        const length = 20 + Math.random() * 40; // 20-60%
+        const angle = Math.random() * 360; // 0-360 degrees
+        const colors = ['#ff4444', '#44ff44', '#4444ff', '#ffaa44', '#aa44ff', '#44ffaa'];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        html += `<div class="captcha-line" style="left: ${x}%; top: ${y}%; width: ${length}%; background-color: ${color}; transform: rotate(${angle}deg);"></div>`;
+      }
+
+      // Generate characters with random rotation
+      for (let i = 0; i < 6; i++) {
+        const char = chars.charAt(Math.floor(Math.random() * chars.length));
+        currentCaptcha += char;
+        const angle = Math.random() * 60 - 30; // Random rotation between -30 and 30 degrees
+        html += `<span class="captcha-char" style="transform: rotate(${angle}deg);">${char}</span>`;
+      }
+
+      captchaDisplay.innerHTML = html;
+      captchaInput.value = '';
+      captchaVerified = false;
+      loginSubmit.disabled = true;
+      signupLink.classList.add('disabled');
+    }
+
+    function verifyCaptchaFunc() {
+      if (captchaInput.value === currentCaptcha) {
+        captchaVerified = true;
+        loginSubmit.disabled = false;
+        signupLink.classList.remove('disabled');
+        loginStatus.textContent = 'Captcha verified!';
+        loginStatus.className = 'form-status success';
+        loginStatus.hidden = false;
+      } else {
+        loginStatus.textContent = 'Captcha incorrect. Try again.';
+        loginStatus.className = 'form-status error';
+        loginStatus.hidden = false;
+      }
+    }
+
+    signupLink.addEventListener('click', (event) => {
+      if (!captchaVerified) {
+        event.preventDefault();
+        loginStatus.textContent = 'Please verify the captcha first.';
+        loginStatus.className = 'form-status error';
+        loginStatus.hidden = false;
+      }
+    });
+
+    verifyCaptcha.addEventListener('click', verifyCaptchaFunc);
+    regenerateCaptcha.addEventListener('click', generateCaptcha);
+
+    // Generate initial captcha
+    generateCaptcha();
 
     loginForm.addEventListener('submit', async (event) => {
       event.preventDefault();
+
+      if (!captchaVerified) {
+        loginStatus.textContent = 'Please verify the captcha first.';
+        loginStatus.className = 'form-status error';
+        loginStatus.hidden = false;
+        return;
+      }
 
       loginSubmit.disabled = true;
       loginSubmit.textContent = 'SIGNING IN...';
