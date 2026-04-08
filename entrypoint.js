@@ -13,6 +13,7 @@ const backupApiRouter = require('./routes/api/backup');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const MAX_LOG_SIZE = 1 * 1024 * 1024; // 1 MB
 
 // View engine
 app.set('views', path.join(__dirname, 'views'));
@@ -45,10 +46,39 @@ app.use((req, res, next) => {
   console.log(logMessage.trim());
 
   // Log to file
-  fs.appendFile(path.join(__dirname, 'activity.txt'), logMessage, (err) => {
+  const logFilePath = path.join(__dirname, 'activity.txt');
+  fs.appendFile(logFilePath, logMessage, (err) => {
     if (err) {
       console.error('Failed to write to activity.txt:', err);
+      return;
     }
+
+    // Check file size and implement circular buffer
+    fs.stat(logFilePath, (err, stats) => {
+      if (err) return;
+
+      if (stats.size > MAX_LOG_SIZE) {
+        fs.readFile(logFilePath, 'utf8', (err, data) => {
+          if (err) return;
+
+          const lines = data.split('\n').filter(line => line.trim());
+          let totalSize = Buffer.byteLength(data, 'utf8');
+
+          // Remove lines from the beginning until size is under limit
+          while (totalSize > MAX_LOG_SIZE && lines.length > 1) {
+            const removedLine = lines.shift();
+            totalSize -= Buffer.byteLength(removedLine + '\n', 'utf8');
+          }
+
+          // Write back the truncated content
+          fs.writeFile(logFilePath, lines.join('\n') + '\n', (err) => {
+            if (err) {
+              console.error('Failed to truncate activity.txt:', err);
+            }
+          });
+        });
+      }
+    });
   });
 
   // Async location lookup using ipapi.co
@@ -59,7 +89,7 @@ app.use((req, res, next) => {
         if (data.city && data.country_name) {
           location = `${data.city}, ${data.country_name}`;
           const updateMessage = `[${timestamp}] ${req.method} ${req.url} - User: ${user} - IP: ${ip} - Location: ${location}\n`;
-          fs.appendFile(path.join(__dirname, 'activity.txt'), `UPDATE: ${updateMessage}`, (err) => {
+          fs.appendFile(logFilePath, `UPDATE: ${updateMessage}`, (err) => {
             if (err) {
               console.error('Failed to update activity.txt:', err);
             }
